@@ -59,3 +59,9 @@ An archive works similarly to a database, it might be interesting to emulate mos
 Install required python modules:
 - discord.py
 - lark
+- texttable
+
+
+## Todo
+- Draw tables
+- Save and retrieve files

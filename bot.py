@@ -1,4 +1,5 @@
 import grammar
+import table
 
 
 def group_opts(args):
@@ -24,7 +25,13 @@ def handle_command(arc, name, args):
         return arc.get(free[0], free[1])
 
     def find():
-        return arc.find(opts, {})
+        fields = free[0]
+        result = arc.find(opts, fields)
+
+        if result:
+            return "```%s```" % table.tabulate(result, 150, fields)
+
+        return "No entries found"
 
     def update():
         id = free[0]
