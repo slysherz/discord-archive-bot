@@ -1,6 +1,15 @@
 import sqlite3
 import json
 
+
+class ArquiveError(Exception):
+    pass
+
+
+class IDNotFound(ArquiveError):
+    pass
+
+
 # Methods to pack, unpack and match tags
 class Tags:
     @staticmethod
@@ -39,9 +48,10 @@ class Archive:
 
         # Create a connection to the database
         self.db = sqlite3.connect(db_file)
+        self._c = self.db.cursor()
 
         # Initialize all required tables
-        self.db.execute(
+        self._c.execute(
             """
             CREATE TABLE IF NOT EXISTS entries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,   -- each entry has an ID
@@ -57,14 +67,17 @@ class Archive:
     def add(self, link, tags):
         print("add", link, tags)
 
-        # Check if link already exists?
+        # TODO: Check if link already exists?
 
-        self.db.execute(
+        self._c.execute(
             """
             INSERT INTO entries(link, tags) VALUES(?, ?)
             """,
             [link, Tags.pack(tags)],
         )
+
+        self.db.commit()
+        return self._c.lastrowid
 
     # Updates an item in the archive. Changes are made by inserting a new entry and hidding the old
     # one, but nothing ever gets deleted
@@ -84,7 +97,10 @@ class Archive:
 
         parameters.append(id)
 
-        self.db.execute(
+        if not self.get(id):
+            raise IDNotFound("Entry with id(%s) must exist" % id)
+
+        self._c.execute(
             """
             INSERT INTO entries(link, updates, tags) 
             SELECT %s, %s, %s
@@ -95,11 +111,14 @@ class Archive:
             parameters,
         )
 
-    # Retrieves a single entry
-    def get(self, id, opts):
+        self.db.commit()
+        return self._c.lastrowid
+
+    # Retrieves a single entry, if it exists
+    def get(self, id, opts=["id", "link", "tags"]):
         print("get", id, opts)
 
-        query = self.db.execute(
+        query = self._c.execute(
             """
             SELECT * FROM entries WHERE id = ?
             """,
@@ -128,7 +147,7 @@ class Archive:
         print("find", search_opts, result_opt)
         result = []
 
-        for (id, link, _, _, tags) in self.db.execute(
+        for (id, link, _, _, tags) in self._c.execute(
             "SELECT * FROM entries WHERE hidden = 0"
         ):
             entry = {"id": id, "link": link, "tags": Tags.unpack(tags)}
