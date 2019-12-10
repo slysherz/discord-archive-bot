@@ -9,7 +9,7 @@ class TestArchive(unittest.TestCase):
         link = "some link"
         tags = ["tag1", "tag2"]
 
-        arc.add(link, tags)
+        arc.add(link, {"tags": tags})
 
         self.assertEqual((link, tags), arc.get(1, ["link", "tags"]))
 

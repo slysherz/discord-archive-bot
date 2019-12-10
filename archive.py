@@ -160,8 +160,19 @@ class Archive:
             parameters,
         )
 
+        new_id = self.con.lastrowid
+
+        self.con.execute(
+            """
+            UPDATE entries
+            SET hidden = 1
+            WHERE id = ?
+            """,
+            [id],
+        )
+
         self.db.commit()
-        return self.con.lastrowid
+        return new_id
 
     # Retrieves a single entry, if it exists
     def get(self, id, opts=["id", "link", "tags", "file"]):
@@ -202,7 +213,7 @@ class Archive:
         print("find", search_opts, result_opt)
         result = []
 
-        for (id, link, _, _, tags) in self.con.execute(
+        for (id, link, _, _, tags, _) in self.con.execute(
             "SELECT * FROM entries WHERE hidden = 0"
         ):
             entry = {"id": id, "link": link, "tags": Tags.unpack(tags)}

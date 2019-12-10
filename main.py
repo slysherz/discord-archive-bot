@@ -1,6 +1,6 @@
 import os
 import io
-import bot
+import archive_bot
 import archive
 import discord
 
@@ -9,6 +9,7 @@ token = os.getenv("BOT_TOKEN")
 assert token, "Environment variable BOT_TOKEN must be defined"
 
 arc = archive.Archive("test.db")
+bot = archive_bot.ArchiveBot(arc)
 client = discord.Client()
 
 
@@ -26,7 +27,7 @@ async def on_message(message):
         data = await message.attachments[0].read()
         extra["file"] = name, data
 
-    answer = bot.handle_message(arc, input, extra)
+    answer = bot.handle_message(input, extra)
 
     if isinstance(answer, tuple):
         text, extra = answer
