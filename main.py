@@ -1,4 +1,5 @@
 import os
+import io
 import bot
 import archive
 import discord
@@ -18,10 +19,26 @@ async def on_message(message):
         return
 
     input = message.content
+    extra = {}
 
-    answer = bot.handle_message(arc, input)
+    if message.attachments:
+        name = message.attachments[0].filename
+        data = await message.attachments[0].read()
+        extra["file"] = name, data
 
-    if answer:
+    answer = bot.handle_message(arc, input, extra)
+
+    if isinstance(answer, tuple):
+        text, extra = answer
+
+        assert "file" in extra
+        name, data = extra["file"]
+
+        attach = discord.File(io.BytesIO(data), filename=name)
+
+        await message.channel.send(text, file=attach)
+
+    elif answer:
         print("ANSWER:", answer)
         await message.channel.send(answer)
 

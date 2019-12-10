@@ -10,19 +10,26 @@ def free_opts(args):
     return [e for e in args if not isinstance(e, tuple)]
 
 
-def handle_command(arc, name, args):
+def handle_command(arc, name, args, extra):
     free = free_opts(args)
-    opts = group_opts(args)
+    opts = {**group_opts(args), **extra}
 
     def add():
         link = free[0]
-        return arc.add(link, opts.get("tags", []))
+        return arc.add(link, opts)
 
     def get():
-        if len(free) == 1:
-            return arc.get(free[0], ["id", "link", "tags"])
+        result = arc.get(free[0], ["id", "link", "tags", "file"])
 
-        return arc.get(free[0], free[1])
+        if not result:
+            return "Entry with id %s not found" % id
+
+        file = result[3]
+
+        if file:
+            return result[0:3], {"file": file}
+
+        return result
 
     def find():
         fields = free[0]
@@ -43,13 +50,16 @@ def handle_command(arc, name, args):
         return e
 
 
-def handle_message(arc, message):
+def handle_message(arc, message, extra):
     try:
         int_tree = grammar.parse(message)
         tree = grammar.transform(int_tree)
 
         # result = "```%s\n\n%s```" % (int_tree.pretty(), tree)
-        result = handle_command(arc, tree[0], tree[1])
+        result = handle_command(arc, tree[0], tree[1], extra)
+
+        if isinstance(result, tuple):
+            return result
 
         if result:
             return str(result)
