@@ -52,7 +52,7 @@ An archive works similarly to a database, it might be interesting to emulate mos
 - Create
 - Alter table
 - Insert
-- Drop [table]
+- Drop table
 
 
 ## Install
@@ -63,5 +63,23 @@ Install required python modules:
 
 
 ## Todo
-- Draw tables
-- Save and retrieve files
+A bunch of ideas that are worth exploring
+- Improve get/add/update messages
+- Type check commands
+- Safe database updates
+    - How to update the bot with newe features while making sure no data is lost?
+    - Should also support rollbacks
+- Limit number of items shown
+    - Look through multiple slices
+- Improve updates
+    - Add and remove values from tags (needs syntax)
+- Improve search
+    - Look at description, creator, scores...
+    - Automatic tags?
+    - Look at file content
+    - Image classification?
+- Improve big archive scalling
+- Which messages to answer to, which to ignore?
+- User permissions
+- Check if link works, save article
+- Plugins
