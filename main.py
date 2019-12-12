@@ -37,6 +37,16 @@ async def on_message(message):
             title="error", description=answer["error"], color=colors["error"]
         )
 
+        if "usage" in answer:
+            usage = answer["usage"]
+
+            embed.add_field(name="syntax", value=usage["syntax"], inline=False)
+
+            examples = usage["examples"]
+            if examples:
+                ex = "```%s```" % "\n".join(examples)
+                embed.add_field(name="examples", value=ex, inline=False)
+
         return await message.channel.send(embed=embed)
 
     args = []

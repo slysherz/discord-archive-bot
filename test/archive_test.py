@@ -18,3 +18,6 @@ class TestArchive(unittest.TestCase):
 
         self.assertEqual((new_tag,), arc.get(2, ["tags"]))
 
+        # Broken links are not allowed
+        self.assertRaises(Exception, arc.add, {"link": "broken link"})
+

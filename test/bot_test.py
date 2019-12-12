@@ -19,6 +19,8 @@ class TestBot(unittest.TestCase):
         # Find entries, only the new one exists
         print(bot.handle_message("!find [id, link, tags]", {}))
 
+        assert "error" in bot.handle_message('!add "broken link"', {})
+
         # self.assertEqual((new_tag,), arc.get(2, ["tags"]))
 
     def test_files(self):

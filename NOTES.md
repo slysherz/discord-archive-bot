@@ -69,11 +69,13 @@ Install required python modules:
 
 
 ## Todo
-- Type check commands
 - Improve updates
     - Add and remove values from tags (needs syntax)
 
 Continuous improvement
+- Type check commands
+    - Improve error messages
+    - Usage command
 - Improve get/add/update messages
 
 A bunch of ideas that are worth exploring

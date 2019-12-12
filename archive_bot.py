@@ -18,6 +18,20 @@ class ArchiveBot:
 
         return dict(zip(keys, self.arc.get(id, keys)))
 
+    def get_usage(self):
+        return {
+            "usage": "get",
+            "syntax": "!get [id]",
+            "examples": ["!get 123"],
+        }
+
+    def update_usage(self):
+        return {
+            "usage": "update",
+            "syntax": "!update [id] ...options",
+            "examples": ["!update 123 name: newname tags: [newone, newtwo]"],
+        }
+
     def add(self, args, opts):
         if len(args):
             opts["link"] = args[0]
@@ -29,6 +43,9 @@ class ArchiveBot:
         return self.get_resume(id)
 
     def get(self, args, opts):
+        if not args:
+            return {"error": "ID field is missing.", "usage": self.get_usage()}
+
         keys = ["id", "name", "tags", "link", "file"]
         values = self.arc.get(args[0], keys)
 
@@ -49,6 +66,9 @@ class ArchiveBot:
         return {"table": (result, fields)}
 
     def update(self, args, opts):
+        if not args:
+            return {"error": "ID field is missing.", "usage": self.update_usage()}
+
         id = self.arc.update(args[0], opts)
 
         return self.get_resume(id)

@@ -60,6 +60,9 @@ class Files:
             return None
 
         name, data = value
+        assert isinstance(name, str)
+        assert isinstance(data, bytes)
+
         ctime = int(time.time())
         size = len(data)
 
@@ -104,7 +107,7 @@ def complete_link(link):
         if is_url(prefix + link):
             return prefix + link
 
-    assert False, "%s is not a valid link" % link
+    assert False, "Not a valid link"
 
 
 class Archive:
@@ -131,8 +134,31 @@ class Archive:
             """
         )
 
+        identity = lambda value: value
+
         self.files = Files(self.db.cursor())
         self.tags = Tags()
+        self.unpackf = {
+            "id": identity,
+            "name": identity,
+            "updates": identity,
+            "hidden": identity,
+            "tags": self.tags.unpack,
+            "link": identity,
+            "file": self.files.unpack,
+        }
+
+    def unpack(self, keys, values):
+        return tuple(self.unpackf[key](value) for key, value in zip(keys, values))
+
+    def prepare_get(self, keys, allowed):
+        if not keys:
+            keys = allowed
+
+        for key in keys:
+            assert key in allowed, "Getting key '%s' is not allowed" % key
+
+        return keys
 
     # Adds a brand new item to the archive
     def add(self, fields):
@@ -210,30 +236,23 @@ class Archive:
         return new_id
 
     # Retrieves a single entry, if it exists
-    def get(self, id, opts=["id", "name", "tags", "link", "file"]):
+    def get(self, id, opts=None):
         print("get", id, opts)
+
+        opts = self.prepare_get(opts, ["id", "name", "tags", "link", "file"])
 
         query = self.con.execute(
             """
-            SELECT * FROM entries WHERE id = ?
-            """,
+            SELECT %s FROM entries WHERE id = ?
+            """
+            % ", ".join(opts),
             [id],
         ).fetchone()
 
         if not query:
             return None
 
-        (_, name, _, _, tags, link, file_id) = query
-        entry = {
-            "id": id,
-            "name": name,
-            "tags": self.tags.unpack(tags),
-            "link": link,
-            "file": self.files.unpack(file_id),
-        }
-
-        print(entry)
-        return tuple(entry[e] for e in opts)
+        return self.unpack(opts, query)
 
     def __match(self, entry, search_opts):
         for opt in search_opts:
@@ -245,12 +264,15 @@ class Archive:
         return True
 
     # Retrieves entries that match the required parameters
-    def find(self, search_opts, result_opt):
-        print("find", search_opts, result_opt)
+    def find(self, search_opts, result_opts=None):
+        print("find", search_opts, result_opts)
+
+        result_opts = self.prepare_get(result_opts, ["id", "name", "tags", "link"])
+
         result = []
 
-        for (id, name, _, _, tags, link, _) in self.con.execute(
-            "SELECT * FROM entries WHERE hidden = 0"
+        for (id, name, tags, link) in self.con.execute(
+            "SELECT id, name, tags, link FROM entries WHERE hidden = 0"
         ):
             entry = {
                 "id": id,
@@ -262,7 +284,7 @@ class Archive:
             if not self.__match(entry, search_opts):
                 continue
 
-            result.append(tuple(entry[e] for e in result_opt))
+            result.append(tuple(entry[e] for e in result_opts))
 
         return result
 
