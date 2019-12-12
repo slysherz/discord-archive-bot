@@ -21,6 +21,12 @@
 !get [id]
 !find "keyword"
 !find tags: [one, two]
+
+experiments
+!undo
+!find page:3
+!find tags: [author:slysherz]
+!update 123 +[tag1 tag2] -tag3 
 ```
 
 ## Parser
@@ -28,7 +34,7 @@
 - Very loose parser, with additional checks later
 
 ## Core table
-`| id | link | updates | hidden | tags |`
+`| id | name | updates | hidden | tags | link | file |`
 
 ## Pieces
 - Discord bot frontend
@@ -63,23 +69,33 @@ Install required python modules:
 
 
 ## Todo
-A bunch of ideas that are worth exploring
 - Improve get/add/update messages
 - Type check commands
+- Improve updates
+    - Add and remove values from tags (needs syntax)
+
+A bunch of ideas that are worth exploring
 - Safe database updates
-    - How to update the bot with newe features while making sure no data is lost?
+    - How to update the bot with new features while making sure no data is lost?
     - Should also support rollbacks
 - Limit number of items shown
     - Look through multiple slices
 - Improve updates
-    - Add and remove values from tags (needs syntax)
+    - Group edits
 - Improve search
     - Look at description, creator, scores...
     - Automatic tags?
     - Look at file content
     - Image classification?
+    - Search metadata (who are all known authors?)
+- Tags are powerful and can be used to implement other features
+    - author:slysherz
+    - author:? (query who the autor is)
+    - special tag restrictitions: score:value with value in 0-5
 - Improve big archive scalling
 - Which messages to answer to, which to ignore?
 - User permissions
 - Check if link works, save article
 - Plugins
+- Playlist
+- Show entry's history
