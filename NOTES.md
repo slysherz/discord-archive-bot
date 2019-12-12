@@ -69,10 +69,12 @@ Install required python modules:
 
 
 ## Todo
-- Improve get/add/update messages
 - Type check commands
 - Improve updates
     - Add and remove values from tags (needs syntax)
+
+Continuous improvement
+- Improve get/add/update messages
 
 A bunch of ideas that are worth exploring
 - Safe database updates
@@ -99,3 +101,5 @@ A bunch of ideas that are worth exploring
 - Plugins
 - Playlist
 - Show entry's history
+- Improve discord integration
+    - handle message edits
