@@ -12,10 +12,11 @@ class IDNotFound(ArquiveError):
     pass
 
 
-# Methods to pack, unpack and match tags
 class Tags:
-    @staticmethod
-    def pack(value):
+    def __init__(self):
+        pass
+
+    def pack(self, value):
         if not value:
             value = []
 
@@ -24,15 +25,13 @@ class Tags:
 
         return json.dumps(value)
 
-    @staticmethod
-    def unpack(value):
+    def unpack(self, value):
         if not value:
             return []
 
         return json.loads(value)
 
-    @staticmethod
-    def match(value, pattern):
+    def match(self, value, pattern):
         for v in pattern:
             if not v in value:
                 return False
@@ -57,6 +56,9 @@ class Files:
         )
 
     def pack(self, value):
+        if not value:
+            return None
+
         name, data = value
         ctime = int(time.time())
         size = len(data)
@@ -71,6 +73,9 @@ class Files:
         return self.con.lastrowid
 
     def unpack(self, id):
+        if not id:
+            return None
+
         (_, name, _, _, data) = self.con.execute(
             """
             SELECT * FROM files WHERE id = ?
@@ -127,15 +132,16 @@ class Archive:
         )
 
         self.files = Files(self.db.cursor())
+        self.tags = Tags()
 
     # Adds a brand new item to the archive
     def add(self, fields):
         print("add", fields)
 
         name = fields.get("name", None)
-        tags = fields.get("tags", [])
+        tags = self.tags.pack(fields.get("tags", None))
         link = fields.get("link", None)
-        file_id = self.files.pack(fields["file"]) if "file" in fields else None
+        file_id = self.files.pack(fields.get("file", None))
 
         if link:
             link = complete_link(link)
@@ -146,7 +152,7 @@ class Archive:
             """
             INSERT INTO entries(name, tags, link, file) VALUES(?, ?, ?, ?)
             """,
-            [name, Tags.pack(tags), link, file_id],
+            [name, tags, link, file_id],
         )
 
         self.db.commit()
@@ -166,7 +172,7 @@ class Archive:
 
         if "tags" in changed:
             fields[2] = "?"
-            parameters.append(Tags.pack(changed["tags"]))
+            parameters.append(self.tags.pack(changed["tags"]))
 
         if "link" in changed:
             fields[3] = "?"
@@ -221,9 +227,9 @@ class Archive:
         entry = {
             "id": id,
             "name": name,
-            "tags": Tags.unpack(tags),
+            "tags": self.tags.unpack(tags),
             "link": link,
-            "file": self.files.unpack(file_id) if file_id else None,
+            "file": self.files.unpack(file_id),
         }
 
         print(entry)
@@ -231,8 +237,8 @@ class Archive:
 
     def __match(self, entry, search_opts):
         for opt in search_opts:
-            if opt == "tags" and not Tags.match(
-                Tags.unpack(entry["tags"]), search_opts[opt]
+            if opt == "tags" and not self.tags.match(
+                self.tags.unpack(entry["tags"]), search_opts[opt]
             ):
                 return False
 
@@ -246,7 +252,12 @@ class Archive:
         for (id, name, _, _, tags, link, _) in self.con.execute(
             "SELECT * FROM entries WHERE hidden = 0"
         ):
-            entry = {"id": id, "name": name, "tags": Tags.unpack(tags), "link": link}
+            entry = {
+                "id": id,
+                "name": name,
+                "tags": self.tags.unpack(tags),
+                "link": link,
+            }
 
             if not self.__match(entry, search_opts):
                 continue
