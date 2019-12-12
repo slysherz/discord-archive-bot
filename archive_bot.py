@@ -1,5 +1,4 @@
 import grammar
-import table
 
 
 def group_opts(args):
@@ -41,10 +40,13 @@ class ArchiveBot:
         return result
 
     def find(self, args, opts):
-        fields = args[0]
+        fields = ["id", "link", "tags"]
+        if args:
+            fields = args[0]
+
         result = self.arc.find(opts, fields)
 
-        return {"message": "```%s```" % table.tabulate(result, 150, fields)}
+        return {"table": (result, fields)}
 
     def update(self, args, opts):
         id = self.arc.update(args[0], opts)

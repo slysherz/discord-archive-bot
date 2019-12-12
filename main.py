@@ -3,6 +3,7 @@ import io
 import archive_bot
 import archive
 import discord
+import table
 
 # Get secret token from an environment variable
 token = os.getenv("BOT_TOKEN")
@@ -40,26 +41,31 @@ async def on_message(message):
 
     args = []
     extras = {}
+    if answer.get("table", None):
+        rows, col_names = answer["table"]
+        args.append("```%s```" % table.tabulate(rows, 150, col_names))
+
     if answer.get("file", None):
         name, data = answer["file"]
 
         extras["file"] = discord.File(io.BytesIO(data), filename=name)
 
-    embed_extras = {}
     if answer.get("link", None):
         args.append(answer["link"])
 
+    embed_extras = {}
     if answer.get("name", None):
         embed_extras["title"] = answer["name"]
 
     embed = discord.Embed(**embed_extras)
 
     for key in answer:
-        if key in ["link", "file", "title"]:
+        if key in ["link", "file", "title", "table"]:
             continue
 
         embed.add_field(name=key, value=str(answer[key]), inline=True)
 
+    if embed.fields:
     extras["embed"] = embed
     return await message.channel.send(*args, **extras)
 

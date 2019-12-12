@@ -1,7 +1,7 @@
 command: command_word command_body
 
 ?command_word: "!" WORD
-command_body: (list | value | named_parameter)+
+command_body: (list | value | named_parameter)*
 
 named_parameter: WORD ":" (list | value)
 
