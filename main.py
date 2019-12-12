@@ -12,6 +12,8 @@ arc = archive.Archive("test.db")
 bot = archive_bot.ArchiveBot(arc)
 client = discord.Client()
 
+colors = {"error": 0xFF0000}
+
 
 @client.event
 async def on_message(message):
@@ -29,19 +31,37 @@ async def on_message(message):
 
     answer = bot.handle_message(input, extra)
 
-    if isinstance(answer, tuple):
-        text, extra = answer
+    if "error" in answer:
+        embed = discord.Embed(
+            title="error", description=answer["error"], color=colors["error"]
+        )
 
-        assert "file" in extra
-        name, data = extra["file"]
+        return await message.channel.send(embed=embed)
 
-        attach = discord.File(io.BytesIO(data), filename=name)
+    args = []
+    extras = {}
+    if answer.get("file", None):
+        name, data = answer["file"]
 
-        await message.channel.send(text, file=attach)
+        extras["file"] = discord.File(io.BytesIO(data), filename=name)
 
-    elif answer:
-        print("ANSWER:", answer)
-        await message.channel.send(answer)
+    embed_extras = {}
+    if answer.get("link", None):
+        args.append(answer["link"])
+
+    if answer.get("name", None):
+        embed_extras["title"] = answer["name"]
+
+    embed = discord.Embed(**embed_extras)
+
+    for key in answer:
+        if key in ["link", "file", "title"]:
+            continue
+
+        embed.add_field(name=key, value=str(answer[key]), inline=True)
+
+    extras["embed"] = embed
+    return await message.channel.send(*args, **extras)
 
 
 @client.event

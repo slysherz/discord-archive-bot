@@ -1,6 +1,7 @@
 import sqlite3
 import json
 import time
+import validators
 
 
 class ArquiveError(Exception):
@@ -84,6 +85,23 @@ def scrub(table_name):
     return "".join(chr for chr in table_name if chr.isalnum() or chr in ["_"])
 
 
+def complete_link(link):
+    def is_url(link):
+        return validators.url(link, public=True) == True
+
+    if is_url(link):
+        return link
+
+    for prefix in [
+        "https://",
+        "https://www.",
+    ]:
+        if is_url(prefix + link):
+            return prefix + link
+
+    assert False, "%s is not a valid link" % link
+
+
 class Archive:
     def __init__(self, db_file):
         print("init")
@@ -97,10 +115,11 @@ class Archive:
             """
             CREATE TABLE IF NOT EXISTS entries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,   -- each entry has an ID
-                link TEXT,                              -- web link
+                name TEXT,                              --
                 updates INTEGER DEFAULT 0,              --
                 hidden INTEGER DEFAULT 0,               --
                 tags TEXT,                              -- 
+                link TEXT,                              -- 
                 file INTEGER,                           -- 
                 FOREIGN KEY(file) REFERENCES files(id)
             )
@@ -110,19 +129,24 @@ class Archive:
         self.files = Files(self.db.cursor())
 
     # Adds a brand new item to the archive
-    def add(self, link, fields):
-        print("add", link, fields)
+    def add(self, fields):
+        print("add", fields)
 
+        name = fields.get("name", None)
         tags = fields.get("tags", [])
+        link = fields.get("link", None)
         file_id = self.files.pack(fields["file"]) if "file" in fields else None
+
+        if link:
+            link = complete_link(link)
 
         # TODO: Check if link already exists?
 
         self.con.execute(
             """
-            INSERT INTO entries(link, tags, file) VALUES(?, ?, ?)
+            INSERT INTO entries(name, tags, link, file) VALUES(?, ?, ?, ?)
             """,
-            [link, Tags.pack(tags), file_id],
+            [name, Tags.pack(tags), link, file_id],
         )
 
         self.db.commit()
@@ -133,17 +157,22 @@ class Archive:
     def update(self, id, changed):
         print("update", changed)
 
-        fields = ["link", "id", "tags"]
+        fields = ["id", "name", "tags", "link"]
         parameters = []
 
-        if "link" in changed:
-            fields[0] = "?"
-            parameters.append(changed["link"])
+        if "name" in changed:
+            fields[1] = "?"
+            parameters.append(changed["name"])
 
         if "tags" in changed:
             fields[2] = "?"
             parameters.append(Tags.pack(changed["tags"]))
 
+        if "link" in changed:
+            fields[3] = "?"
+            parameters.append(changed["link"])
+
+        # Used at the end by the WHERE clause
         parameters.append(id)
 
         if not self.get(id):
@@ -151,8 +180,8 @@ class Archive:
 
         self.con.execute(
             """
-            INSERT INTO entries(link, updates, tags) 
-            SELECT %s, %s, %s
+            INSERT INTO entries(name, updates, tags, link) 
+            SELECT %s, %s, %s, %s
                 FROM entries 
                 WHERE id = ?
             """
@@ -175,7 +204,7 @@ class Archive:
         return new_id
 
     # Retrieves a single entry, if it exists
-    def get(self, id, opts=["id", "link", "tags", "file"]):
+    def get(self, id, opts=["id", "name", "tags", "link", "file"]):
         print("get", id, opts)
 
         query = self.con.execute(
@@ -188,11 +217,12 @@ class Archive:
         if not query:
             return None
 
-        (_, link, _, _, tags, file_id) = query
+        (_, name, _, _, tags, link, file_id) = query
         entry = {
             "id": id,
-            "link": link,
+            "name": name,
             "tags": Tags.unpack(tags),
+            "link": link,
             "file": self.files.unpack(file_id) if file_id else None,
         }
 
@@ -213,10 +243,10 @@ class Archive:
         print("find", search_opts, result_opt)
         result = []
 
-        for (id, link, _, _, tags, _) in self.con.execute(
+        for (id, name, _, _, tags, link, _) in self.con.execute(
             "SELECT * FROM entries WHERE hidden = 0"
         ):
-            entry = {"id": id, "link": link, "tags": Tags.unpack(tags)}
+            entry = {"id": id, "name": name, "tags": Tags.unpack(tags), "link": link}
 
             if not self.__match(entry, search_opts):
                 continue

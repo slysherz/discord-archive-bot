@@ -6,10 +6,10 @@ class TestArchive(unittest.TestCase):
     def test_archive(self):
         arc = archive.Archive(":memory:")
 
-        link = "some link"
+        link = "https://www.google.com/"
         tags = ["tag1", "tag2"]
 
-        arc.add(link, {"tags": tags})
+        arc.add({"name": "name", "link": link, "tags": tags})
 
         self.assertEqual((link, tags), arc.get(1, ["link", "tags"]))
 

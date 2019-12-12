@@ -9,7 +9,7 @@ class TestBot(unittest.TestCase):
         bot = archive_bot.ArchiveBot(arc)
 
         # Add a new entry
-        bot.handle_message("!add link tags: [a, b, c]", {})
+        bot.handle_message("!add somelink tags: [a, b, c]", {})
         print(bot.handle_message("!get 1", {}))
 
         # Update old entry
