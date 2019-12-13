@@ -212,12 +212,12 @@ class Archive:
 
         self.con.execute(
             """
-            INSERT INTO entries(name, updates, tags, link) 
-            SELECT %s, %s, %s, %s
+            INSERT INTO entries(updates, name, tags, link) 
+            SELECT %s
                 FROM entries 
                 WHERE id = ?
             """
-            % tuple(fields),
+            % " ,".join(fields),
             parameters,
         )
 
