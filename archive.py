@@ -169,6 +169,9 @@ class Archive:
         link = fields.get("link", None)
         file_id = self.files.pack(fields.get("file", None))
 
+        if not name and file_id:
+            name = fields["file"][0]
+
         if link:
             link = complete_link(link)
 
