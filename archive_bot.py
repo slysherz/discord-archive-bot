@@ -57,7 +57,7 @@ class ArchiveBot:
         return result
 
     def find(self, args, opts):
-        fields = ["id", "link", "tags"]
+        fields = ["id", "name", "link", "tags"]
         if args:
             fields = args[0]
 
