@@ -33,6 +33,10 @@ class ArchiveBot:
         }
 
     def add(self, args, opts):
+        if opts.get("edits", None):
+            # Editing adds is not supported atm
+            return None
+
         if len(args):
             opts["link"] = args[0]
 
@@ -66,6 +70,10 @@ class ArchiveBot:
         return {"table": (result, fields)}
 
     def update(self, args, opts):
+        if opts.get("edits", None):
+            # Editing updates is not supported atm
+            return None
+
         if not args:
             return {"error": "ID field is missing.", "usage": self.update_usage()}
 

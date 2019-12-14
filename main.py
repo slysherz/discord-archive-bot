@@ -16,8 +16,21 @@ client = discord.Client()
 colors = {"error": 0xFF0000}
 
 
-@client.event
-async def on_message(message):
+# This has a really big bug
+def corresponding_answer(message):
+    cached = client.cached_messages
+
+    for i in range(len(cached) - 1, -1, -1):
+        if message == cached[i] and i + 1 < len(cached):
+            answer = cached[i + 1]
+
+            if answer.author != client.user:
+                return
+
+            return answer
+
+
+async def answer_query(message, edits=None):
     # we do not want the bot to reply to itself
     if message.author == client.user:
         return
@@ -29,6 +42,9 @@ async def on_message(message):
         name = message.attachments[0].filename
         data = await message.attachments[0].read()
         extra["file"] = name, data
+
+    if edits:
+        extra["edits"] = edits.content
 
     answer = bot.handle_message(input, extra)
 
@@ -47,7 +63,7 @@ async def on_message(message):
                 ex = "```%s```" % "\n".join(examples)
                 embed.add_field(name="examples", value=ex, inline=False)
 
-        return await message.channel.send(embed=embed)
+        return [], {"extras": embed}
 
     args = []
     extras = {}
@@ -77,7 +93,41 @@ async def on_message(message):
 
     if embed.fields:
     extras["embed"] = embed
-    return await message.channel.send(*args, **extras)
+
+    return args, extras
+
+
+@client.event
+async def on_message(message):
+    answer = await answer_query(message)
+
+    if answer:
+        args, extras = answer
+        await message.channel.send(*args, **extras)
+
+
+@client.event
+async def on_message_edit(before, after):
+    print("message update: ", before, after)
+    old_answer = corresponding_answer(after)
+
+    if not old_answer:
+        return
+
+    answer = await answer_query(after)
+
+    if answer:
+        args, extras = answer
+
+        if args:
+            extras["content"] = args[0]
+        else:
+            extras["content"] = ""
+
+        if extras.get("file", None):
+            extras["file"] = None
+
+        await old_answer.edit(**extras)
 
 
 @client.event
