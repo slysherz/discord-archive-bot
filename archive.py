@@ -16,6 +16,23 @@ class Tags:
     def __init__(self):
         pass
 
+    def update(self, old, dif):
+        if isinstance(dif, dict):
+            tags = set(self.unpack(old))
+            add = dif.get("add", [])
+
+            for value in add:
+                assert isinstance(value, str)
+                tags.add(value)
+
+            sub = dif.get("sub", [])
+            for value in sub:
+                tags.discard(value)
+
+            return self.pack(tags)
+
+        return self.pack(dif)
+
     def pack(self, value):
         if not value:
             value = []
@@ -23,11 +40,11 @@ class Tags:
         for v in value:
             assert isinstance(v, str)
 
-        return json.dumps(value)
+        return json.dumps(list(value))
 
     def unpack(self, value):
         if not value:
-            return []
+            return {}
 
         return json.loads(value)
 
@@ -54,6 +71,9 @@ class Files:
             )
             """
         )
+
+    def update(self, old, dif):
+        return self.pack(dif)
 
     def pack(self, value):
         if not value:
@@ -192,26 +212,37 @@ class Archive:
     def update(self, id, changed):
         print("update", changed)
 
+        updateable = ["name", "tags", "link"]
+        old_values = self.con.execute(
+            """
+            SELECT %s FROM entries WHERE id = ?
+            """
+            % ", ".join(updateable),
+            [id],
+        ).fetchone()
+
+        if not old_values:
+            raise IDNotFound("Entry with id(%s) must exist" % id)
+
+        old = dict(zip(updateable, old_values))
+
         fields = ["id", "name", "tags", "link"]
         parameters = []
 
         if "name" in changed:
             fields[1] = "?"
-            parameters.append(changed["name"])
+            parameters.append(changed["name"][0])
 
         if "tags" in changed:
             fields[2] = "?"
-            parameters.append(self.tags.pack(changed["tags"]))
+            parameters.append(self.tags.update(old["tags"], changed["tags"]))
 
         if "link" in changed:
             fields[3] = "?"
-            parameters.append(changed["link"])
+            parameters.append(complete_link(changed["link"][0]))
 
         # Used at the end by the WHERE clause
         parameters.append(id)
-
-        if not self.get(id):
-            raise IDNotFound("Entry with id(%s) must exist" % id)
 
         self.con.execute(
             """

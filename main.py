@@ -108,7 +108,6 @@ async def on_message(message):
 
 @client.event
 async def on_message_edit(before, after):
-    print("message update: ", before, after)
     old_answer = corresponding_answer(after)
 
     if not old_answer:

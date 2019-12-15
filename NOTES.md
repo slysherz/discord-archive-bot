@@ -26,7 +26,7 @@ experiments
 !undo
 !find page:3
 !find tags: [author:slysherz]
-!update 123 +[tag1 tag2] -tag3 
+!update 123 tags: +[tag1 tag2] -tag3 
 ```
 
 ## Parser
@@ -69,14 +69,13 @@ Install required python modules:
 
 
 ## Todo
-- Improve updates
-    - Add and remove values from tags (needs syntax)
 
 Continuous improvement
 - Type check commands
     - Improve error messages
     - Usage command
 - Improve get/add/update messages
+- Improve updates
 
 A bunch of ideas that are worth exploring
 - Safe database updates
@@ -104,4 +103,4 @@ A bunch of ideas that are worth exploring
 - Playlist
 - Show entry's history
 - Improve discord integration
-    - handle message edits
+    - handle add/update message edits

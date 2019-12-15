@@ -34,3 +34,13 @@ class TestBot(unittest.TestCase):
 
         # Get file
         print(bot.handle_message("!get 1", {}))
+
+    def test_update(self):
+        arc = archive.Archive(":memory:")
+        bot = archive_bot.ArchiveBot(arc)
+
+        bot.handle_message('!add "somelink.com" tags: [a, b]', {})
+
+        assert not "error" in bot.handle_message(
+            '!update 1 tags: +[c, d] -e link: "otherlink.com" name: name', {}
+        )

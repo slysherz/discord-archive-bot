@@ -9,6 +9,45 @@ def free_opts(args):
     return [e for e in args if not isinstance(e, tuple)]
 
 
+def group_args(args):
+    # items to add
+    add = []
+
+    # items to remove
+    sub = []
+
+    # forget the old value and use this instead
+    eq = []
+
+    def insert(lst, items):
+        if isinstance(items, list):
+            for item in items:
+                lst.append(item)
+
+        else:
+            lst.append(items)
+
+    for item in args:
+        if isinstance(item, grammar.Add):
+            insert(add, item.value)
+
+        elif isinstance(item, grammar.Sub):
+            insert(sub, item.value)
+
+        else:
+            insert(eq, item)
+
+    if eq:
+        assert not add and not sub
+        return eq
+
+    return {"add": add, "sub": sub}
+
+
+def single_arg(args):
+    return {k: v[0] for k, v in args.items()}
+
+
 class ArchiveBot:
     def __init__(self, archive):
         self.arc = archive
@@ -38,11 +77,12 @@ class ArchiveBot:
             return None
 
         if len(args):
-            opts["link"] = args[0]
+            opts["link"] = [args[0]]
 
         if not ("link" in opts or "file" in opts):
             return {"error": "Entry must contain either a link or a file"}
 
+        opts = single_arg(opts)
         id = self.arc.add(opts)
         return self.get_resume(id)
 
@@ -65,6 +105,7 @@ class ArchiveBot:
         if args:
             fields = args[0]
 
+        opts = single_arg(opts)
         result = self.arc.find(opts, fields)
 
         return {"table": (result, fields)}
@@ -76,6 +117,8 @@ class ArchiveBot:
 
         if not args:
             return {"error": "ID field is missing.", "usage": self.update_usage()}
+
+        opts = {k: group_args(v) for k, v in opts.items()}
 
         id = self.arc.update(args[0], opts)
 

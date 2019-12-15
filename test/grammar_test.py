@@ -12,5 +12,6 @@ class TestGrammar(unittest.TestCase):
             "!get 123",
             '!find "keyword"',
             '!find tags: [one, two, "three"]',
+            "!update 123 tags: +[four, five, seven] -one",
         ]:
             print("\nPARSING '%s':\n" % s, g.parse(s).pretty())
