@@ -70,6 +70,10 @@ def single_arg(args):
         elif key == "tags":
             result[key] = flatten(args[key])
 
+        elif key == "name":
+            assert len(args[key]) == 1
+            result[key] = args[key][0]
+
         else:
             assert False, "Missing handler for %s" % key
 
