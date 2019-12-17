@@ -7,6 +7,7 @@ class TestGrammar(unittest.TestCase):
         g = grammar.build_grammar()
 
         for s in [
+            "!add link tags: author:slysherz score:1",
             '!add link tags: [one, two] description: "looks really cool"',
             "!edit 123 tags: [three]",
             "!get 123",
@@ -14,4 +15,8 @@ class TestGrammar(unittest.TestCase):
             '!find tags: [one, two, "three"]',
             "!update 123 tags: +[four, five, seven] -one",
         ]:
-            print("\nPARSING '%s':\n" % s, g.parse(s).pretty())
+            parsed = g.parse(s)
+            print("\nPARSING '%s':\n" % s, parsed.pretty())
+
+            transformed = grammar.transform(parsed)
+            print(transformed)

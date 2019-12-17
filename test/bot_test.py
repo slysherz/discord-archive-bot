@@ -30,7 +30,7 @@ class TestBot(unittest.TestCase):
         file = ("filename.txt", b"some content here")
 
         # Send pseudo-file
-        bot.handle_message("!add file", {"file": file})
+        print(bot.handle_message("!add file", {"file": file}))
 
         # Get file
         print(bot.handle_message("!get 1", {}))

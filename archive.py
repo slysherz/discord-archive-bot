@@ -37,6 +37,7 @@ class Tags:
         if not value:
             value = []
 
+        assert isinstance(value, list)
         for v in value:
             assert isinstance(v, str)
 
@@ -48,12 +49,28 @@ class Tags:
 
         return json.loads(value)
 
-    def match(self, value, pattern):
-        for v in pattern:
+    def match_all(self, value, tags):
+        for v in tags:
             if not v in value:
                 return False
 
         return True
+
+    def match_any(self, value, tags):
+        for v in tags:
+            if v in value:
+                return True
+
+        return False
+
+    def match(self, value, pattern):
+        if isinstance(pattern, dict):
+            yes = pattern.get("add", [])
+            no = pattern.get("sub", [])
+
+            return self.match_all(value, yes) and not self.match_any(value, no)
+
+        return self.match_all(value, pattern)
 
 
 class Files:
@@ -290,9 +307,7 @@ class Archive:
 
     def __match(self, entry, search_opts):
         for opt in search_opts:
-            if opt == "tags" and not self.tags.match(
-                self.tags.unpack(entry["tags"]), search_opts[opt]
-            ):
+            if opt == "tags" and not self.tags.match(entry["tags"], search_opts[opt]):
                 return False
 
         return True

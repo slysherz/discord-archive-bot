@@ -1,6 +1,18 @@
 import grammar
 
 
+def flatten(lst):
+    flat_list = []
+    for sublist in lst:
+        if isinstance(sublist, list):
+            for item in sublist:
+                flat_list.append(item)
+        else:
+            flat_list.append(sublist)
+
+    return flat_list
+
+
 def group_opts(args):
     return dict(e for e in args if isinstance(e, tuple))
 
@@ -17,7 +29,7 @@ def group_args(args):
     sub = []
 
     # forget the old value and use this instead
-    eq = []
+    # eq = []
 
     def insert(lst, items):
         if isinstance(items, list):
@@ -35,17 +47,29 @@ def group_args(args):
             insert(sub, item.value)
 
         else:
-            insert(eq, item)
-
-    if eq:
-        assert not add and not sub
-        return eq
+            insert(add, item)
 
     return {"add": add, "sub": sub}
 
 
 def single_arg(args):
-    return {k: v[0] for k, v in args.items()}
+    result = {}
+
+    for key in args:
+        if key == "file":
+            result[key] = args[key]
+
+        elif key == "link":
+            assert isinstance(args[key], str)
+            result[key] = args[key]
+
+        elif key == "tags":
+            result[key] = flatten(args[key])
+
+        else:
+            assert False, "Missing handler for %s" % key
+
+    return result
 
 
 class ArchiveBot:
@@ -77,7 +101,7 @@ class ArchiveBot:
             return None
 
         if len(args):
-            opts["link"] = [args[0]]
+            opts["link"] = args[0]
 
         if not ("link" in opts or "file" in opts):
             return {"error": "Entry must contain either a link or a file"}
@@ -105,7 +129,8 @@ class ArchiveBot:
         if args:
             fields = args[0]
 
-        opts = single_arg(opts)
+        opts = {k: group_args(v) for k, v in opts.items()}
+        # opts = group_args(opts)
         result = self.arc.find(opts, fields)
 
         return {"table": (result, fields)}

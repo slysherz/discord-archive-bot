@@ -41,6 +41,9 @@ class CommandTransformer(Transformer):
     def named_parameter(self, args):
         return (args[0], args[1:])
 
+    def wstring(self, args):
+        return args[0].value
+
     plus_value = Add
     minus_value = Sub
 

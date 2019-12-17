@@ -104,3 +104,4 @@ A bunch of ideas that are worth exploring
 - Show entry's history
 - Improve discord integration
     - handle add/update message edits
+- Consider keeping updated entry on the same id
