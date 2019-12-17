@@ -316,6 +316,9 @@ class Archive:
     def find(self, search_opts, result_opts=None):
         print("find", search_opts, result_opts)
 
+        page = search_opts.get("page", [0])[0]
+        assert isinstance(page, int)
+
         result_opts = self.prepare_get(result_opts, ["id", "name", "tags", "link"])
 
         result = []
@@ -335,5 +338,18 @@ class Archive:
 
             result.append(tuple(entry[e] for e in result_opts))
 
-        return result
+        # Use a small slice as the answer
+        items_per_page = 10
+
+        page_result = result[items_per_page * page : items_per_page * (page + 1)]
+        cols = len(result_opts)
+        dots = ["..."] * cols
+
+        if page > 0:
+            page_result = [dots, *page_result]
+
+        if len(result) > items_per_page * (page + 1):
+            page_result.append(dots)
+
+        return page_result
 
