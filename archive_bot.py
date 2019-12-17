@@ -29,7 +29,7 @@ def group_args(args):
     sub = []
 
     # forget the old value and use this instead
-    # eq = []
+    eq = []
 
     def insert(lst, items):
         if isinstance(items, list):
@@ -47,7 +47,11 @@ def group_args(args):
             insert(sub, item.value)
 
         else:
-            insert(add, item)
+            insert(eq, item)
+
+    if eq:
+        assert not add and not sub
+        return eq
 
     return {"add": add, "sub": sub}
 

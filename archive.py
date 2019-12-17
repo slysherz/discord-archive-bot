@@ -29,7 +29,7 @@ class Tags:
             for value in sub:
                 tags.discard(value)
 
-            return self.pack(tags)
+            return self.pack(list(tags))
 
         return self.pack(dif)
 
