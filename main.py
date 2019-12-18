@@ -63,7 +63,7 @@ async def answer_query(message, edits=None):
                 ex = "```%s```" % "\n".join(examples)
                 embed.add_field(name="examples", value=ex, inline=False)
 
-        return [], {"extras": embed}
+        return [], {"embed": embed}
 
     args = []
     extras = {}
