@@ -24,14 +24,15 @@
 
 experiments
 !undo
-!find page:3
-!find tags: [author:slysherz]
-!update 123 tags: +[tag1 tag2] -tag3 
 ```
 
 ## Parser
 - Uses [LARk](https://github.com/lark-parser/lark)
 - Very loose parser, with additional checks later
+
+# Search
+- Probabily need to index documents and use something like pysolr
+- https://github.com/django-haystack/pysolr
 
 ## Core table
 `| id | name | updates | hidden | tags | link | file |`
@@ -69,6 +70,8 @@ Install required python modules:
 
 
 ## Todo
+- Help/usage messages
+- Handle add/update message edits
 
 Continuous improvement
 - Type check commands
@@ -81,8 +84,6 @@ A bunch of ideas that are worth exploring
 - Safe database updates
     - How to update the bot with new features while making sure no data is lost?
     - Should also support rollbacks
-- Limit number of items shown
-    - Look through multiple slices
 - Improve updates
     - Group edits
 - Improve search
@@ -103,5 +104,4 @@ A bunch of ideas that are worth exploring
 - Playlist
 - Show entry's history
 - Improve discord integration
-    - handle add/update message edits
 - Consider keeping updated entry on the same id
