@@ -22,7 +22,6 @@ class Tags:
             add = dif.get("add", [])
 
             for value in add:
-                assert isinstance(value, str)
                 tags.add(value)
 
             sub = dif.get("sub", [])
@@ -37,9 +36,9 @@ class Tags:
         if not value:
             value = []
 
-        assert isinstance(value, list)
+        assert isinstance(value, list), "Tags must be a list of strings"
         for v in value:
-            assert isinstance(v, str)
+            assert isinstance(v, str), "Each tag must be a string"
 
         return json.dumps(list(value))
 
@@ -224,6 +223,21 @@ class Archive:
         self.db.commit()
         return self.con.lastrowid
 
+    def delete(self, id, dont_commit=False):
+        print("delete", id)
+
+        self.con.execute(
+            """
+            UPDATE entries
+            SET hidden = 1
+            WHERE id = ?
+            """,
+            [id],
+        )
+
+        if not dont_commit:
+            self.db.commit()
+
     # Updates an item in the archive. Changes are made by inserting a new entry and hidding the old
     # one, but nothing ever gets deleted
     def update(self, id, changed):
@@ -274,14 +288,7 @@ class Archive:
 
         new_id = self.con.lastrowid
 
-        self.con.execute(
-            """
-            UPDATE entries
-            SET hidden = 1
-            WHERE id = ?
-            """,
-            [id],
-        )
+        self.delete(id, True)
 
         self.db.commit()
         return new_id
@@ -337,6 +344,9 @@ class Archive:
                 continue
 
             result.append(tuple(entry[e] for e in result_opts))
+
+        # Reverse results order
+        result = result[::-1]
 
         # Use a small slice as the answer
         items_per_page = 10

@@ -15,6 +15,7 @@ client = discord.Client()
 
 colors = {"error": 0xFF0000}
 
+history = {}
 
 # This has a really big bug
 def corresponding_answer(message):
@@ -44,7 +45,7 @@ async def answer_query(message, edits=None):
         extra["file"] = name, data
 
     if edits:
-        extra["edits"] = edits.content
+        extra["edits"] = edits
 
     answer = bot.handle_message(input, extra)
 
@@ -63,7 +64,9 @@ async def answer_query(message, edits=None):
                 ex = "```%s```" % "\n".join(examples)
                 embed.add_field(name="examples", value=ex, inline=False)
 
-        return [], {"embed": embed}
+        edit_info = answer.get("edits", {})
+
+        return [], {"embed": embed}, edit_info
 
     args = []
     extras = {}
@@ -86,7 +89,7 @@ async def answer_query(message, edits=None):
     embed = discord.Embed(**embed_extras)
 
     for key in answer:
-        if key in ["link", "file", "title", "table"]:
+        if key in ["link", "file", "title", "table", "edits"]:
             continue
 
         embed.add_field(name=key, value=str(answer[key]), inline=True)
@@ -94,7 +97,9 @@ async def answer_query(message, edits=None):
     if embed.fields:
     extras["embed"] = embed
 
-    return args, extras
+    edit_info = answer["edits"]
+
+    return args, extras, edit_info
 
 
 @client.event
@@ -102,8 +107,10 @@ async def on_message(message):
     answer = await answer_query(message)
 
     if answer:
-        args, extras = answer
-        await message.channel.send(*args, **extras)
+        args, extras, edit_info = answer
+        msg = await message.channel.send(*args, **extras)
+
+        history[msg.id] = edit_info
 
 
 @client.event
@@ -113,10 +120,14 @@ async def on_message_edit(before, after):
     if not old_answer:
         return
 
-    answer = await answer_query(after)
+    edits = history[old_answer.id]
+    if not edits:
+        return
+
+    answer = await answer_query(after, edits)
 
     if answer:
-        args, extras = answer
+        args, extras, edit_info = answer
 
         if args:
             extras["content"] = args[0]
@@ -127,6 +138,7 @@ async def on_message_edit(before, after):
             extras["file"] = None
 
         await old_answer.edit(**extras)
+        history[old_answer.id] = edit_info
 
 
 @client.event

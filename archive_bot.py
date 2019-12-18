@@ -103,22 +103,29 @@ class ArchiveBot:
             "examples": ["!update 123 name: newname tags: [newone, newtwo]"],
         }
 
-    def add(self, args, opts):
-        if opts.get("edits", None):
-            # Editing adds is not supported atm
-            return None
-
+    def add(self, args, opts, edits):
         if len(args):
             opts["link"] = args[0]
 
         if not ("link" in opts or "file" in opts):
-            return {"error": "Entry must contain either a link or a file"}
+            return {
+                "error": "Entry must contain either a link or a file",
+                "edits": edits,
+            }
 
         opts = single_arg(opts)
         id = self.arc.add(opts)
-        return self.get_resume(id)
 
-    def get(self, args, opts):
+        result = self.get_resume(id)
+        result["edits"] = {"type": "add", "generated_id": id}
+
+        # If the type isn't 'add', we're probably replacing an error
+        if edits and edits["type"] == "add":
+            self.arc.delete(edits["generated_id"])
+
+        return result
+
+    def get(self, args, opts, edits):
         if not args:
             return {"error": "ID field is missing.", "usage": self.get_usage()}
 
@@ -129,10 +136,11 @@ class ArchiveBot:
             return {"error": "Entry not found"}
 
         result = dict(zip(keys, values))
+        result["edits"] = {"type": "get"}
 
         return result
 
-    def find(self, args, opts):
+    def find(self, args, opts, edits):
         fields = ["id", "name", "link", "tags"]
         if args:
             fields = args[0]
@@ -141,23 +149,31 @@ class ArchiveBot:
         # opts = group_args(opts)
         result = self.arc.find(opts, fields)
 
-        return {"table": (result, fields)}
+        return {"table": (result, fields), "edits": {"type": "find"}}
 
-    def update(self, args, opts):
-        if opts.get("edits", None):
-            # Editing updates is not supported atm
-            return None
-
+    def update(self, args, opts, edits):
         if not args:
-            return {"error": "ID field is missing.", "usage": self.update_usage()}
+            return {
+                "error": "ID field is missing.",
+                "usage": self.update_usage(),
+                "edits": edits,
+            }
 
         opts = {k: group_args(v) for k, v in opts.items()}
 
         id = self.arc.update(args[0], opts)
 
-        return self.get_resume(id)
+        result = self.get_resume(id)
+        result["edits"] = {"type": "update", "generated_id": id}
+
+        # If the type isn't 'update', we're probably replacing an error
+        if edits and edits["type"] == "update":
+            self.arc.delete(edits["generated_id"])
+
+        return result
 
     def handle_command(self, name, args, extra):
+        edits = extra.pop("edits", None)
         free = free_opts(args)
         opts = {**group_opts(args), **extra}
 
@@ -167,9 +183,9 @@ class ArchiveBot:
                 "get": self.get,
                 "find": self.find,
                 "update": self.update,
-            }[name](free, opts)
+            }[name](free, opts, edits)
         except Exception as e:
-            return {"error": e}
+            return {"error": str(e), "edits": edits}
 
     def handle_message(self, message, extra):
         try:
