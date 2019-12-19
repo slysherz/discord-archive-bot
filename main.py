@@ -121,8 +121,10 @@ async def on_message_edit(before, after):
         return
 
     edits = history[old_answer.id]
+
+    # This usually happens when the answer was an error
     if not edits:
-        return
+        edits = {"type": "no-type"}
 
     answer = await answer_query(after, edits)
 
@@ -136,6 +138,8 @@ async def on_message_edit(before, after):
 
         if extras.get("file", None):
             extras["file"] = None
+
+        extras["embed"] = extras.get("embed", None)
 
         await old_answer.edit(**extras)
         history[old_answer.id] = edit_info
