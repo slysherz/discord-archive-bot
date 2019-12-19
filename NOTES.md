@@ -12,6 +12,7 @@
 - Articles
 - Ideas
 - Music, Film
+- Food recipes
 
 ## Examples
 
@@ -73,13 +74,7 @@ Install required python modules:
 - Help/usage messages
 - Handle add/update message edits
 
-Continuous improvement
-- Type check commands
-    - Improve error messages
-    - Usage command
-- Improve get/add/update messages
-- Improve updates
-
+### Ideas
 A bunch of ideas that are worth exploring
 - Safe database updates
     - How to update the bot with new features while making sure no data is lost?
@@ -105,3 +100,17 @@ A bunch of ideas that are worth exploring
 - Show entry's history
 - Improve discord integration
 - Consider keeping updated entry on the same id
+- Search inside vs outside database
+
+### Need improvement
+- Type check commands
+    - Improve error messages
+    - Usage command
+- Improve get/add/update messages
+    - File / link preview
+- Improve updates
+
+### Backlog
+Low importance nice to haves
+- Support edits for older messages
+
