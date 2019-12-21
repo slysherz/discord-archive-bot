@@ -72,7 +72,6 @@ Install required python modules:
 
 ## Todo
 - Help/usage messages
-- Handle add/update message edits
 
 ### Ideas
 A bunch of ideas that are worth exploring
@@ -101,6 +100,8 @@ A bunch of ideas that are worth exploring
 - Improve discord integration
 - Consider keeping updated entry on the same id
 - Search inside vs outside database
+- Load from history
+    - Needs strong backward compatibility
 
 ### Need improvement
 - Type check commands
@@ -114,3 +115,9 @@ A bunch of ideas that are worth exploring
 Low importance nice to haves
 - Support edits for older messages
 
+## Values
+- Support few commands, but support them really well
+    - Be overwelmingly nice
+    - If it seems like it should work, it probably should
+- Never lose data
+    - Files are small, we can keep them forever
