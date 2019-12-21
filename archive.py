@@ -1,6 +1,7 @@
 import sqlite3
 import json
 import time
+import datetime
 import validators
 
 
@@ -81,7 +82,6 @@ class Files:
             CREATE TABLE IF NOT EXISTS files(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,   
                 name TEXT,                              -- name of the file
-                ctime INT,                              -- creation time
                 size INT,                               -- file size
                 data BLOB                               -- content
             )
@@ -99,14 +99,13 @@ class Files:
         assert isinstance(name, str)
         assert isinstance(data, bytes)
 
-        ctime = int(time.time())
         size = len(data)
 
         self.con.execute(
             """
-            INSERT INTO files(name, ctime, size, data) VALUES(?, ?, ?, ?)
+            INSERT INTO files(name, size, data) VALUES(?, ?, ?)
             """,
-            [name, ctime, size, data],
+            [name, size, data],
         )
 
         return self.con.lastrowid
@@ -160,6 +159,7 @@ class Archive:
             CREATE TABLE IF NOT EXISTS entries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,   -- each entry has an ID
                 name TEXT,                              --
+                ctime REAL,                             -- creation time
                 updates INTEGER DEFAULT 0,              --
                 hidden INTEGER DEFAULT 0,               --
                 tags TEXT,                              -- 
@@ -177,6 +177,7 @@ class Archive:
         self.unpackf = {
             "id": identity,
             "name": identity,
+            "ctime": time.ctime,
             "updates": identity,
             "hidden": identity,
             "tags": self.tags.unpack,
@@ -204,6 +205,7 @@ class Archive:
         tags = self.tags.pack(fields.get("tags", None))
         link = fields.get("link", None)
         file_id = self.files.pack(fields.get("file", None))
+        ctime = time.time()
 
         if not name and file_id:
             name = fields["file"][0]
@@ -215,9 +217,9 @@ class Archive:
 
         self.con.execute(
             """
-            INSERT INTO entries(name, tags, link, file) VALUES(?, ?, ?, ?)
+            INSERT INTO entries(name, ctime, tags, link, file) VALUES(?, ?, ?, ?, ?)
             """,
-            [name, tags, link, file_id],
+            [name, ctime, tags, link, file_id],
         )
 
         self.db.commit()
