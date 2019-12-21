@@ -49,8 +49,11 @@ def group_args(args):
         else:
             insert(eq, item)
 
+    if eq and (add or sub):
+        add += eq
+        eq = []
+
     if eq:
-        assert not add and not sub
         return eq
 
     return {"add": add, "sub": sub}
