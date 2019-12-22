@@ -88,8 +88,21 @@ async def answer_query(message, edits=None):
 
     embed = discord.Embed(**embed_extras)
 
+    if "usage" in answer:
+        usage = answer["usage"]
+
+        embed.title = usage["usage"]
+        embed.description = usage["description"]
+
+        embed.add_field(name="syntax", value="```%s```" % usage["syntax"], inline=False)
+
+        examples = usage["examples"]
+        if examples:
+            ex = "```%s```" % "\n".join(examples)
+            embed.add_field(name="examples", value=ex, inline=False)
+
     for key in answer:
-        if key in ["link", "file", "title", "table", "edits"]:
+        if key in ["link", "file", "title", "table", "edits", "usage"]:
             continue
 
         embed.add_field(name=key, value=str(answer[key]), inline=True)

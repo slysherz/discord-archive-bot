@@ -92,19 +92,59 @@ class ArchiveBot:
 
         return dict(zip(keys, self.arc.get(id, keys)))
 
-    def get_usage(self):
-        return {
-            "usage": "get",
-            "syntax": "!get [id]",
-            "examples": ["!get 123"],
+    def usage(self, command):
+        usage = {
+            "add": {
+                "usage": "add",
+                "syntax": "!add [link] [name: ...] [tags: ...]",
+                "examples": [
+                    '!add "link.com" name: link tags: tag1 tag2',
+                    '!add name: somefile tags: ["tag a", "tag b"]',
+                ],
+                "description": "Saves a new file or link in the archive. To save a file, drag and drop it into discord and write !add in the message.",
+            },
+            "get": {
+                "usage": "get",
+                "syntax": "!get id [...fields]",
+                "examples": ["!get 123", "!get 123 [tags, name, id]"],
+                "description": "Retrieves a previously saved file or link. Use find to search for the id.",
+            },
+            "update": {
+                "usage": "update",
+                "syntax": "!update id [link: ...] [name: ...] [tags: ...]",
+                "examples": [
+                    "!update 123 name: newname tags: [newone, newtwo]",
+                    "!update 123 tags: +addthistag -removethistag",
+                ],
+                "description": "Modifies an existing entry. Can be used to change the name and add or remove tags.",
+            },
+            "find": {
+                "usage": "find",
+                "syntax": "!find [...fields] [tags: ...] [page: N]",
+                "examples": ["!find [id, name] tags: must_have -cannot page: 2"],
+                "description": "Retrieves a list of entries that match the search parameters.",
+            },
+            "help": {
+                "usage": "help",
+                "syntax": "!help [command]",
+                "examples": ["!help add"],
+                "description": "Displays information about how to use each command.",
+            },
+            "general": {
+                "usage": "archive bot",
+                "description": "Bot to keep track and organize files and links. You can add, modify, search and retrieve files in the archive.",
+                "examples": [
+                    "!help add",
+                    '!add "link.com" name: link tags: tag1 tag2',
+                    "!get 123",
+                    "!update 123 tags: +addthistag -removethistag",
+                    "!find [id, name] tags: must_have -cannot page: 2",
+                ],
+                "syntax": '!command [a, list] tags: +add_this -remove_this link: "put complex things inside quotation marks"',
+            },
         }
 
-    def update_usage(self):
-        return {
-            "usage": "update",
-            "syntax": "!update [id] ...options",
-            "examples": ["!update 123 name: newname tags: [newone, newtwo]"],
-        }
+        return usage.get(command, usage["general"])
 
     def add(self, args, opts, edits):
         if len(args):
@@ -130,7 +170,7 @@ class ArchiveBot:
 
     def get(self, args, opts, edits):
         if not args:
-            return {"error": "ID field is missing.", "usage": self.get_usage()}
+            return {"error": "ID field is missing.", "usage": self.usage("get")}
 
         keys = ["id", "name", "tags", "link", "file"]
         values = self.arc.get(args[0], keys)
@@ -158,7 +198,7 @@ class ArchiveBot:
         if not args:
             return {
                 "error": "ID field is missing.",
-                "usage": self.update_usage(),
+                "usage": self.usage("update"),
                 "edits": edits,
             }
 
@@ -175,6 +215,12 @@ class ArchiveBot:
 
         return result
 
+    def help(self, args, opts, _edits):
+        if args:
+            return {"usage": self.usage(args[0]), "edits": {"type": "help"}}
+
+        return {"usage": self.usage("general"), "edits": {"type": "help"}}
+
     def handle_command(self, name, args, extra):
         edits = extra.pop("edits", None)
         free = free_opts(args)
@@ -186,6 +232,7 @@ class ArchiveBot:
                 "get": self.get,
                 "find": self.find,
                 "update": self.update,
+                "help": self.help,
             }[name](free, opts, edits)
         except Exception as e:
             return {"error": str(e), "edits": edits}
