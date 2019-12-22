@@ -19,7 +19,7 @@ class Tags:
 
     def update(self, old, dif):
         if isinstance(dif, dict):
-            tags = set(self.unpack(old))
+            tags = self.unpack(old)
             add = dif.get("add", [])
 
             for value in add:
@@ -29,7 +29,7 @@ class Tags:
             for value in sub:
                 tags.discard(value)
 
-            return self.pack(list(tags))
+            return self.pack(tags)
 
         return self.pack(dif)
 
@@ -37,17 +37,19 @@ class Tags:
         if not value:
             value = []
 
-        assert isinstance(value, list), "Tags must be a list of strings"
+        # assert isinstance(value, list), "Tags must be a list of strings"
+        s = set()
         for v in value:
             assert isinstance(v, str), "Each tag must be a string"
+            s.add(v)
 
-        return json.dumps(list(value))
+        return json.dumps(list(s))
 
     def unpack(self, value):
         if not value:
             return {}
 
-        return json.loads(value)
+        return set(json.loads(value))
 
     def match_all(self, value, tags):
         for v in tags:

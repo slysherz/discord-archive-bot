@@ -71,7 +71,6 @@ Install required python modules:
 
 
 ## Todo
-- Help/usage messages
 
 ### Ideas
 A bunch of ideas that are worth exploring
