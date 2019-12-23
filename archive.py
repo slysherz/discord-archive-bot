@@ -125,26 +125,60 @@ class Files:
 
         return name, data
 
+    def match(self, value, pattern):
+        id = value
+
+        if not id:
+            return False
+
+        (name,) = self.con.execute(
+            """
+            SELECT name FROM files WHERE id = ?
+            """,
+            [id],
+        ).fetchone()
+
+        return pattern in name
+
+
+class Link:
+    def __init__(self):
+        pass
+
+    def is_url(self, link):
+        return validators.url(link, public=True) == True
+
+    def complete_link(self, link):
+
+        if self.is_url(link):
+            return link
+
+        for prefix in [
+            "https://",
+            "https://www.",
+        ]:
+            if self.is_url(prefix + link):
+                return prefix + link
+
+        assert False, "Not a valid link"
+
+    def pack(self, value):
+        if not value:
+            return value
+
+        # TODO check if link already exists
+
+        return self.complete_link(value)
+
+    def unpack(self, value):
+        return value
+
+    def match(self, value, pattern):
+        return value and pattern in value
+
 
 def scrub(table_name):
     return "".join(chr for chr in table_name if chr.isalnum() or chr in ["_"])
-
-
-def complete_link(link):
-    def is_url(link):
-        return validators.url(link, public=True) == True
-
-    if is_url(link):
-        return link
-
-    for prefix in [
-        "https://",
-        "https://www.",
-    ]:
-        if is_url(prefix + link):
-            return prefix + link
-
-    assert False, "Not a valid link"
 
 
 class Archive:
@@ -176,6 +210,7 @@ class Archive:
 
         self.files = Files(self.db.cursor())
         self.tags = Tags()
+        self.link = Link()
         self.unpackf = {
             "id": identity,
             "name": identity,
@@ -183,7 +218,7 @@ class Archive:
             "updates": identity,
             "hidden": identity,
             "tags": self.tags.unpack,
-            "link": identity,
+            "link": self.link.unpack,
             "file": self.files.unpack,
         }
 
@@ -205,17 +240,12 @@ class Archive:
 
         name = fields.get("name", None)
         tags = self.tags.pack(fields.get("tags", None))
-        link = fields.get("link", None)
+        link = self.link.pack(fields.get("link", None))
         file_id = self.files.pack(fields.get("file", None))
         ctime = time.time()
 
         if not name and file_id:
             name = fields["file"][0]
-
-        if link:
-            link = complete_link(link)
-
-        # TODO: Check if link already exists?
 
         self.con.execute(
             """
@@ -274,7 +304,7 @@ class Archive:
 
         if "link" in changed:
             fields[3] = "?"
-            parameters.append(complete_link(changed["link"][0]))
+            parameters.append(self.link.pack(changed["link"][0]))
 
         # Used at the end by the WHERE clause
         parameters.append(id)
@@ -318,10 +348,37 @@ class Archive:
 
     def __match(self, entry, search_opts):
         for opt in search_opts:
+            assert opt in ["tags", "link", "keyword", "name"], "Cannot search for %s" % opt
+
             if opt == "tags" and not self.tags.match(entry["tags"], search_opts[opt]):
                 return False
 
+            if opt == "link" and not self.link.match(entry["link"], search_opts[opt]):
+                return False
+
+            if opt == "keyword" and not self.__match_any(entry, search_opts[opt]):
+                return False
+
+            if opt == "name" and not search_opts[opt] in (entry["name"] or ""):
+                return False
+
+
         return True
+
+    def __match_any(self, entry, pattern):
+        # if self.tags.match(entry["tags"], [pattern]):
+        #     return True
+
+        if self.link.match(entry["link"], pattern):
+            return True
+
+        if pattern in (entry["name"] or ""):
+            return True
+
+        if self.files.match(entry["file"], pattern):
+            return True
+
+        return False
 
     # Retrieves entries that match the required parameters
     def find(self, search_opts, result_opts=None):
@@ -334,14 +391,15 @@ class Archive:
 
         result = []
 
-        for (id, name, tags, link) in self.con.execute(
-            "SELECT id, name, tags, link FROM entries WHERE hidden = 0"
+        for (id, name, tags, link, file) in self.con.execute(
+            "SELECT id, name, tags, link, file FROM entries WHERE hidden = 0"
         ):
             entry = {
                 "id": id,
                 "name": name,
                 "tags": self.tags.unpack(tags),
-                "link": link,
+                "link": self.link.unpack(link),
+                "file": file,
             }
 
             if not self.__match(entry, search_opts):

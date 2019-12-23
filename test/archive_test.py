@@ -48,3 +48,14 @@ class TestArchive(unittest.TestCase):
         # Select just the tags
         self.assertAlmostEqual(arc.get(id2, ["tags"]), ({"a"},))
 
+    def test_find(self):
+        arc = archive.Archive(":memory:")
+
+        arc.add({"name": "link", "link": "link.com", "tags": ["atag"]})
+        arc.add({"name": "other", "link": "other", "tags": ["other"]})
+
+        assert len(arc.find({"name": "link"})) == 1
+        assert len(arc.find({"link": "link.com"})) == 1
+        assert len(arc.find({"tags": ["atag"]})) == 1
+        assert len(arc.find({"keyword": "link"})) == 1
+

@@ -185,10 +185,10 @@ class ArchiveBot:
 
     def find(self, args, opts, edits):
         fields = ["id", "name", "link", "tags"]
-        if args:
-            fields = args[0]
 
         opts = {k: group_args(v) for k, v in opts.items()}
+        if args:
+            opts["keyword"] = args[0]
         # opts = group_args(opts)
         result = self.arc.find(opts, fields)
 
