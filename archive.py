@@ -348,7 +348,7 @@ class Archive:
 
     def __match(self, entry, search_opts):
         for opt in search_opts:
-            assert opt in ["tags", "link", "keyword", "name"], "Cannot search for %s" % opt
+            assert opt in ["tags", "link", "keyword", "name", "page"], "Cannot search for %s" % opt
 
             if opt == "tags" and not self.tags.match(entry["tags"], search_opts[opt]):
                 return False
@@ -409,19 +409,6 @@ class Archive:
 
         # Reverse results order
         result = result[::-1]
+        return result
 
-        # Use a small slice as the answer
-        items_per_page = 10
-
-        page_result = result[items_per_page * page : items_per_page * (page + 1)]
-        cols = len(result_opts)
-        dots = ["..."] * cols
-
-        if page > 0:
-            page_result = [dots, *page_result]
-
-        if len(result) > items_per_page * (page + 1):
-            page_result.append(dots)
-
-        return page_result
 

@@ -83,9 +83,35 @@ def single_arg(args):
     return result
 
 
+def map_table(keys, values, map_fn):
+    result = []
+    for entry in values:
+        e = []
+        for key, value in zip(keys, entry):
+            if key in map_fn:
+                value = map_fn[key](value)
+
+            e.append(value)
+
+        result.append(tuple(e))
+
+    return result
+
+
 class ArchiveBot:
     def __init__(self, archive):
         self.arc = archive
+
+    def _display_tags(self, tags):
+        tags = sorted(tags)
+
+        tags_max_size = 100
+        txt = ", ".join(tags)
+
+        if len(txt) > tags_max_size - 3:
+            return txt[0 : tags_max_size - 3] + "..."
+
+        return txt
 
     def get_resume(self, id):
         keys = ["id", "name", "tags"]
@@ -192,7 +218,26 @@ class ArchiveBot:
         # opts = group_args(opts)
         result = self.arc.find(opts, fields)
 
-        return {"table": (result, fields), "edits": {"type": "find"}}
+        # Use a small slice as the answer
+        items_per_page = 10
+        page = opts.get("page", [1])[0] - 1
+
+        page_result = map_table(
+            fields,
+            result[items_per_page * page : items_per_page * (page + 1)],
+            {"tags": self._display_tags},
+        )
+
+        cols = len(fields)
+        dots = ["..."] * cols
+
+        if page > 0:
+            page_result = [dots, *page_result]
+
+        if len(result) > items_per_page * (page + 1):
+            page_result.append(dots)
+
+        return {"table": (page_result, fields), "edits": {"type": "find"}}
 
     def update(self, args, opts, edits):
         if not args:

@@ -44,3 +44,19 @@ class TestBot(unittest.TestCase):
         assert not "error" in bot.handle_message(
             '!update 1 tags: +[c, d] -e link: "otherlink.com" name: name', {}
         )
+
+    def test_find(self):
+        arc = archive.Archive(":memory:")
+        bot = archive_bot.ArchiveBot(arc)
+
+        # One single complex entry
+        tags = ", ".join("somerandomtag" + str(e) for e in range(20))
+        bot.handle_message("!add test name: name tags: [%s]" % tags, {})
+
+        # Add a bunch of entries to force multiple pages
+        for _ in range(20):
+            bot.handle_message("!add test", {})
+
+        assert not "error" in bot.handle_message("!find", {})
+        assert not "error" in bot.handle_message("!find page: 1", {})
+        assert not "error" in bot.handle_message("!find page: 2", {})
