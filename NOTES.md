@@ -71,6 +71,8 @@ Install required python modules:
 
 
 ## Todo
+- Improve documentation
+- Notes
 
 ### Ideas
 A bunch of ideas that are worth exploring
@@ -98,17 +100,17 @@ A bunch of ideas that are worth exploring
 - Show entry's history
 - Improve discord integration
 - Consider keeping updated entry on the same id
+    - Message edits already improve this use case
 - Search inside vs outside database
 - Load from history
     - Needs strong backward compatibility
-
-### Need improvement
 - Type check commands
     - Improve error messages
     - Usage command
 - Improve get/add/update messages
     - File / link preview
-- Improve updates
+- Configuration
+    - Load settings from a file which can be reloaded
 
 ### Backlog
 Low importance nice to haves
