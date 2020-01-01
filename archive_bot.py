@@ -130,7 +130,9 @@ class ArchiveBot:
     def get_resume(self, id):
         keys = ["id", "name", "tags"]
 
-        return dict(zip(keys, self.arc.get(id, keys)))
+        keys, values = unpack_tags_column(keys, [self.arc.get(id, keys)])
+
+        return dict(zip(keys, values[0]))
 
     def usage(self, command):
         usage = {
@@ -217,8 +219,11 @@ class ArchiveBot:
                 pass
 
             else:
-                assert len(value) == 1, "Expected a single argument for %s" % key
-                tags.append("%s:%s" % (key, value[0]))
+                assert len(value) == 1, "Expected a single argument for %s." % key
+                val = value[0]
+                assert isinstance(val, (str, int)), "Value given to %s must be a string." % key
+
+                tags.append("%s:%s" % (key, val))
 
         arc_opts["tags"] = [*arc_opts.get("tags", []), *tags]
 
@@ -249,7 +254,10 @@ class ArchiveBot:
         if not values:
             return {"error": "Entry not found"}
 
-        result = dict(zip(keys, values))
+        values = list(values)
+        values[2], named_tags = extract_named_tags(values[2])
+
+        result = {**dict(zip(keys, values)), **named_tags}
         result["edits"] = {"type": "get"}
 
         return result

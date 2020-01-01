@@ -106,7 +106,8 @@ async def answer_query(message, edits=None):
         if key in ["link", "file", "title", "table", "edits", "usage"]:
             continue
 
-        embed.add_field(name=key, value=str(answer[key]), inline=True)
+        value = table.prepare_value(answer[key]) or "Empty"
+        embed.add_field(name=key, value=value, inline=True)
 
     if embed.fields:
     extras["embed"] = embed

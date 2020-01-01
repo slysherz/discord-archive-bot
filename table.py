@@ -2,7 +2,7 @@ import texttable
 import math
 
 
-def prepare_value(value, max_col_width):
+def prepare_value(value, max_col_width=None):
     if isinstance(value, str):
         if max_col_width and len(value > max_col_width):
             return value[: max_col_width - 3] + "..."

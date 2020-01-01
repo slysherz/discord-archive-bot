@@ -18,9 +18,6 @@ class TestBot(unittest.TestCase):
         bot.handle_message("!update 1 tags: [d]", no_extras)
         print(bot.handle_message("!get 2", no_extras))
 
-        # Find entries, only the new one exists
-        print(bot.handle_message("!find", no_extras))
-
         # Add a bare entry
         assert not "error" in bot.handle_message("!add link", no_extras)
 
@@ -29,6 +26,9 @@ class TestBot(unittest.TestCase):
             "!add link name: link tags: [a, b, c] read: someone",
             {"author": ["none"], "file": ("filename.txt", b"some content")},
         )
+
+        # Find entries
+        assert not "error" in bot.handle_message("!find", no_extras)
 
         assert "error" in bot.handle_message('!add "broken link"', no_extras)
 
