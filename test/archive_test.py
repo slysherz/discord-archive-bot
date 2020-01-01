@@ -9,7 +9,7 @@ class TestArchive(unittest.TestCase):
         link = "https://www.google.com/"
         tags = {"tag1", "tag2"}
 
-        arc.add({"name": "name", "link": link, "tags": tags})
+        arc.add(name="name", link=link, tags=tags)
 
         self.assertEqual((link, tags), arc.get(1, ["link", "tags"]))
 
@@ -19,7 +19,7 @@ class TestArchive(unittest.TestCase):
         self.assertEqual((new_tag,), arc.get(2, ["tags"]))
 
         # Broken links are not allowed
-        self.assertRaises(Exception, arc.add, {"link": "broken link"})
+        self.assertRaises(Exception, arc.add, link="broken link")
 
         # Complex update
         arc.update(
@@ -38,12 +38,12 @@ class TestArchive(unittest.TestCase):
     def test_add_get(self):
         arc = archive.Archive(":memory:")
 
-        id1 = arc.add({"name": "link", "link": "link.com", "tags": ["a", "b"]})
+        id1 = arc.add(name="link", link="link.com", tags=["a", "b"])
 
         assert not "error" in arc.get(id1)
 
         # Adding repeated tags should save just a single tag
-        id2 = arc.add({"name": "link", "link": "link.com", "tags": ["a", "a"]})
+        id2 = arc.add(name="link", link="link.com", tags=["a", "a"])
 
         # Select just the tags
         self.assertAlmostEqual(arc.get(id2, ["tags"]), ({"a"},))
@@ -51,8 +51,8 @@ class TestArchive(unittest.TestCase):
     def test_find(self):
         arc = archive.Archive(":memory:")
 
-        arc.add({"name": "link", "link": "link.com", "tags": ["atag"]})
-        arc.add({"name": "other", "link": "other", "tags": ["other"]})
+        arc.add(name="link", link="link.com", tags=["atag"])
+        arc.add(name="other", link="other", tags=["other"])
 
         assert len(arc.find({"name": "link"})) == 1
         assert len(arc.find({"link": "link.com"})) == 1

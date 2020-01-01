@@ -235,17 +235,16 @@ class Archive:
         return keys
 
     # Adds a brand new item to the archive
-    def add(self, fields):
-        print("add", fields)
+    def add(self, name=None, link=None, file=None, tags=None):
+        # print("add", fields)
 
-        name = fields.get("name", None)
-        tags = self.tags.pack(fields.get("tags", None))
-        link = self.link.pack(fields.get("link", None))
-        file_id = self.files.pack(fields.get("file", None))
+        tags = self.tags.pack(tags)
+        link = self.link.pack(link)
+        file_id = self.files.pack(file)
         ctime = time.time()
 
         if not name and file_id:
-            name = fields["file"][0]
+            name = file[0]
 
         self.con.execute(
             """

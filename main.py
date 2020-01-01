@@ -37,7 +37,7 @@ async def answer_query(message, edits=None):
         return
 
     input = message.content
-    extra = {}
+    extra = {"author": [message.author.name]}
 
     if message.attachments:
         name = message.attachments[0].filename
@@ -72,6 +72,7 @@ async def answer_query(message, edits=None):
     extras = {}
     if answer.get("table", None):
         rows, col_names = answer["table"]
+        rows = table.prepare(rows)
         args.append("```%s```" % table.tabulate(rows, 150, col_names))
 
     if answer.get("file", None):

@@ -59,28 +59,53 @@ def group_args(args):
     return {"add": add, "sub": sub}
 
 
-def single_arg(args):
-    result = {}
-
-    for key in args:
-        if key == "file":
-            result[key] = args[key]
-
-        elif key == "link":
-            assert isinstance(args[key], str)
-            result[key] = args[key]
-
-        elif key == "tags":
-            result[key] = flatten(args[key])
-
-        elif key == "name":
-            assert len(args[key]) == 1
-            result[key] = args[key][0]
-
+def extract_named_tags(tags):
+    named_tags = {}
+    clear_tags = []
+    for tag in tags:
+        j = tag.rfind(":")
+        if j == -1:
+            clear_tags.append(tag)
         else:
-            assert False, "Missing handler for %s" % key
+            key = tag[:j]
+            value = tag[j + 1:]
 
-    return result
+            if not key in named_tags:
+                named_tags[key] = []
+
+            named_tags[key].append(value)
+
+    return clear_tags, named_tags
+
+
+def unpack_tags_column(keys, values, new_columns=None):
+    if not "tags" in keys:
+        return keys, values
+
+    i = keys.index("tags")
+    temp = []
+    if new_columns == None:
+        new_columns = set()
+
+        for j in range(len(values)):
+            entry = values[j]
+            clear_tags, named_tags = extract_named_tags(entry[i])
+            new_columns.update(named_tags)
+            temp.append((clear_tags, named_tags))
+
+        new_columns = sorted(new_columns)
+
+    keys = [*keys, *new_columns]
+    for j in range(len(values)):
+        entry = values[j]
+        clear_tags, named_tags = temp[j]
+        new_values = [named_tags.get(key, None) for key in new_columns]
+        
+        new_entry = [*entry, *new_values]
+        new_entry[i] = clear_tags
+        values[j] = new_entry        
+
+    return keys, values
 
 
 def map_table(keys, values, map_fn):
@@ -101,17 +126,6 @@ def map_table(keys, values, map_fn):
 class ArchiveBot:
     def __init__(self, archive):
         self.arc = archive
-
-    def _display_tags(self, tags):
-        tags = sorted(tags)
-
-        tags_max_size = 100
-        txt = ", ".join(tags)
-
-        if len(txt) > tags_max_size - 3:
-            return txt[0 : tags_max_size - 3] + "..."
-
-        return txt
 
     def get_resume(self, id):
         keys = ["id", "name", "tags"]
@@ -173,17 +187,48 @@ class ArchiveBot:
         return usage.get(command, usage["general"])
 
     def add(self, args, opts, edits):
-        if len(args):
+        arc_opts = {}
+
+        if len(args) and not "link" in opts:
             opts["link"] = args[0]
 
-        if not ("link" in opts or "file" in opts):
+        tags = ["added_by:%s" % opts["author"][0]]
+
+        for key, value in opts.items():
+            if key == "tags":
+                arc_opts[key] = flatten(value)
+            
+            elif key == "file":
+                arc_opts[key] = value
+
+            elif key == "link":
+                assert isinstance(value[0], str)
+                arc_opts[key] = value
+
+            elif key == "tags":
+                arc_opts[key] = flatten(args[key])
+
+            elif key == "name":
+                assert len(value) == 1
+                arc_opts[key] = value[0]
+
+            elif key == "author":
+                # Added as a tag, skip
+                pass
+
+            else:
+                assert len(value) == 1, "Expected a single argument for %s" % key
+                tags.append("%s:%s" % (key, value[0]))
+
+        arc_opts["tags"] = [*arc_opts.get("tags", []), *tags]
+
+        if not ("link" in arc_opts or "file" in arc_opts):
             return {
                 "error": "Entry must contain either a link or a file",
                 "edits": edits,
             }
 
-        opts = single_arg(opts)
-        id = self.arc.add(opts)
+        id = self.arc.add(**arc_opts)
 
         result = self.get_resume(id)
         result["edits"] = {"type": "add", "generated_id": id}
@@ -211,6 +256,7 @@ class ArchiveBot:
 
     def find(self, args, opts, edits):
         fields = ["id", "name", "link", "tags"]
+        del opts['author']
 
         opts = {k: group_args(v) for k, v in opts.items()}
         if args:
@@ -221,23 +267,20 @@ class ArchiveBot:
         # Use a small slice as the answer
         items_per_page = 10
         page = opts.get("page", [1])[0] - 1
+        keys, vals = unpack_tags_column(
+            fields, 
+            result[items_per_page * page : items_per_page * (page + 1)])
 
-        page_result = map_table(
-            fields,
-            result[items_per_page * page : items_per_page * (page + 1)],
-            {"tags": self._display_tags},
-        )
-
-        cols = len(fields)
+        cols = len(keys)
         dots = ["..."] * cols
 
         if page > 0:
-            page_result = [dots, *page_result]
+            vals = [dots, *vals]
 
         if len(result) > items_per_page * (page + 1):
-            page_result.append(dots)
+            vals.append(dots)
 
-        return {"table": (page_result, fields), "edits": {"type": "find"}}
+        return {"table": (vals, keys), "edits": {"type": "find"}}
 
     def update(self, args, opts, edits):
         if not args:
