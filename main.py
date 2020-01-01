@@ -31,6 +31,10 @@ def corresponding_answer(message):
             return answer
 
 
+def compress_text(msg):
+    return msg.replace("    ", "\t").replace(" +\n", "\n")
+
+
 async def answer_query(message, edits=None):
     # we do not want the bot to reply to itself
     if message.author == client.user:
@@ -123,7 +127,7 @@ async def on_message(message):
 
     if answer:
         args, extras, edit_info = answer
-        msg = await message.channel.send(*args, **extras)
+        msg = await message.channel.send(*map(compress_text, args), **extras)
 
         history[msg.id] = edit_info
 
@@ -147,7 +151,7 @@ async def on_message_edit(before, after):
         args, extras, edit_info = answer
 
         if args:
-            extras["content"] = args[0]
+            extras["content"] = compress_text(args[0])
         else:
             extras["content"] = ""
 
