@@ -48,6 +48,9 @@ class TestArchive(unittest.TestCase):
         # Select just the tags
         self.assertAlmostEqual(arc.get(id2, ["tags"]), ({"a"},))
 
+        id3 = arc.add(file=("filename.txt", b"some content"))
+        arc.get(id3)
+
     def test_find(self):
         arc = archive.Archive(":memory:")
 

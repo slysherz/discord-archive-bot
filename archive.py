@@ -116,9 +116,9 @@ class Files:
         if not id:
             return None
 
-        (_, name, _, _, data) = self.con.execute(
+        (name, data) = self.con.execute(
             """
-            SELECT * FROM files WHERE id = ?
+            SELECT name, data FROM files WHERE id = ?
             """,
             [id],
         ).fetchone()
