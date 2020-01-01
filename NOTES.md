@@ -111,6 +111,10 @@ A bunch of ideas that are worth exploring
     - File / link preview
 - Configuration
     - Load settings from a file which can be reloaded
+- Knowledge graphs
+    - How to tell: you should read this before you read that
+- Rethink how to select which fields are shown
+- Consider merging get and find
 
 ### Backlog
 Low importance nice to haves
