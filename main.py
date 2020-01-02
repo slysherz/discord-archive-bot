@@ -36,10 +36,6 @@ def compress_text(msg):
 
 
 async def answer_query(message, edits=None):
-    # we do not want the bot to reply to itself
-    if message.author == client.user:
-        return
-
     input = message.content
     extra = {"author": [message.author.name]}
 
@@ -121,22 +117,44 @@ async def answer_query(message, edits=None):
     return args, extras, edit_info
 
 
+async def send_fail_message(channel, exception):
+    title = "critical error"
+    description = "Something went terribly wrong and the program blew up. This is a bug and it will be fixed ASAP."
+    message = repr(exception)
+
+    embed = discord.Embed(title=title, description=description, color=colors["error"])
+    embed.add_field(name="error message", value=message, inline=True)
+
+    await channel.send(embed=embed)
+
+
 @client.event
 async def on_message(message):
-    answer = await answer_query(message)
+    try:
+        # we do not want the bot to reply to itself
+        if message.author == client.user:
+            return
 
-    if answer:
-        args, extras, edit_info = answer
+        args, extras, edit_info = await answer_query(message)
         msg = await message.channel.send(*map(compress_text, args), **extras)
 
         history[msg.id] = edit_info
 
+    except Exception as e:
+        await send_fail_message(message.channel, e)
+
 
 @client.event
 async def on_message_edit(before, after):
+    try:
+        # we do not want the bot to reply to itself
+        if after.author == client.user:
+            return
+
     old_answer = corresponding_answer(after)
 
     if not old_answer:
+            print("Message has been edited, but it is not in cache - ignored.")
         return
 
     edits = history[old_answer.id]
@@ -145,10 +163,7 @@ async def on_message_edit(before, after):
     if not edits:
         edits = {"type": "no-type"}
 
-    answer = await answer_query(after, edits)
-
-    if answer:
-        args, extras, edit_info = answer
+        args, extras, edit_info = await answer_query(after, edits)
 
         if args:
             extras["content"] = compress_text(args[0])
@@ -162,6 +177,9 @@ async def on_message_edit(before, after):
 
         await old_answer.edit(**extras)
         history[old_answer.id] = edit_info
+
+    except Exception as e:
+        await send_fail_message(old_answer.channel, e)
 
 
 @client.event
