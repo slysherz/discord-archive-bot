@@ -74,6 +74,9 @@ Install required python modules:
 - Improve documentation
 - Notes
 
+## Bugs
+- Editing update message to change the id doesn't restore deleted message
+
 ### Ideas
 A bunch of ideas that are worth exploring
 - Safe database updates
@@ -115,6 +118,10 @@ A bunch of ideas that are worth exploring
     - How to tell: you should read this before you read that
 - Rethink how to select which fields are shown
 - Consider merging get and find
+- Consider having multiple files per entry
+- What to do when getting an hidden item
+    - Show an error?
+    - Get the newest version?
 
 ### Backlog
 Low importance nice to haves
