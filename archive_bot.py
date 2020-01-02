@@ -162,8 +162,8 @@ class ArchiveBot:
             },
             "find": {
                 "usage": "find",
-                "syntax": "!find [...fields] [tags: ...] [page: N]",
-                "examples": ["!find [id, name] tags: must_have -cannot page: 2"],
+                "syntax": "!find [keyword] [tags: ...] [page: N]",
+                "examples": ["!find keyword tags: must_have -cannot page: 2"],
                 "description": "Retrieves a list of entries that match the search parameters.",
             },
             "help": {
@@ -180,7 +180,7 @@ class ArchiveBot:
                     '!add "link.com" name: link tags: tag1 tag2',
                     "!get 123",
                     "!update 123 tags: +addthistag -removethistag",
-                    "!find [id, name] tags: must_have -cannot page: 2",
+                    "!find keyword tags: must_have -cannot page: 2",
                 ],
                 "syntax": '!command [a, list] tags: +add_this -remove_this link: "put complex things inside quotation marks"',
             },
@@ -333,6 +333,7 @@ class ArchiveBot:
         except Exception as e:
             return {"error": str(e), "edits": edits}
 
+    # Parses the command message and calls the appropriate command handler
     def handle_message(self, message, extra):
         try:
             int_tree = grammar.parse(message)
