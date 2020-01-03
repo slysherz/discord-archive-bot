@@ -323,13 +323,22 @@ class ArchiveBot:
         opts = {**group_opts(args), **extra}
 
         try:
-            return {
+            commands = {
                 "add": self.add,
                 "get": self.get,
                 "find": self.find,
                 "update": self.update,
                 "help": self.help,
-            }[name](free, opts, edits)
+            }
+
+            if name in commands:
+                return commands[name](free, opts, edits)
+            else:
+                return {
+                    "error": "%s is not a valid command." % name,
+                    "usage": self.usage("general"),
+                    "edits": edits
+                }
         except Exception as e:
             return {"error": str(e), "edits": edits}
 
