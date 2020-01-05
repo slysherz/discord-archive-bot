@@ -17,25 +17,24 @@ colors = {"error": 0xFF0000}
 
 history = {}
 
-# This has a really big bug
-def corresponding_answer(message):
-    cached = client.cached_messages
-
-    for i in range(len(cached) - 1, -1, -1):
-        if message == cached[i] and i + 1 < len(cached):
-            answer = cached[i + 1]
-
-            if answer.author != client.user:
-                return
-
-            return answer
-
 
 def compress_text(msg):
     return msg.replace("    ", "\t").replace(" +\n", "\n")
 
 
+def should_answer_message(message):
+    # We do not want the bot to reply to itself
+    if message.author == client.user:
+        return
+
+    if not message.content.trim().startswith("!"):
+        return False
+
+    return True
+
+
 async def answer_query(message, edits=None):
+    # Extract data from the discord message
     input = message.content
     extra = {"author": [message.author.name]}
 
@@ -47,8 +46,10 @@ async def answer_query(message, edits=None):
     if edits:
         extra["edits"] = edits
 
+    # Process the message
     answer = bot.handle_message(input, extra)
 
+    # Prepare an answer with the result
     if "error" in answer:
         embed = discord.Embed(
             title="error", description=answer["error"], color=colors["error"]
@@ -103,20 +104,28 @@ async def answer_query(message, edits=None):
             embed.add_field(name="examples", value=ex, inline=False)
 
     for key in answer:
-        if key in ["link", "file", "title", "table", "edits", "usage"]:
+        if key in ["link", "file", "title", "table", "edits", "usage", "notes"]:
             continue
 
         value = table.prepare_value(answer[key]) or "Empty"
         embed.add_field(name=key, value=value, inline=True)
 
+    if "notes" in answer:
+        value = "\n".join(note for id, note in answer["notes"])
+
+        embed.add_field(
+            name="notes", value=value, inline=False,
+        )
+
     if embed.fields:
-    extras["embed"] = embed
+        extras["embed"] = embed
 
     edit_info = answer["edits"]
 
     return args, extras, edit_info
 
 
+# Send minimal message to inform the user of a critical failure
 async def send_fail_message(channel, exception):
     title = "critical error"
     description = "Something went terribly wrong and the program blew up. This is a bug and it will be fixed ASAP."
@@ -131,14 +140,14 @@ async def send_fail_message(channel, exception):
 @client.event
 async def on_message(message):
     try:
-        # we do not want the bot to reply to itself
-        if message.author == client.user:
+        if not should_answer_message(message):
             return
 
         args, extras, edit_info = await answer_query(message)
         msg = await message.channel.send(*map(compress_text, args), **extras)
 
-        history[msg.id] = edit_info
+        # Save some info so that what to edit later
+        history[message.id] = (edit_info, msg)
 
     except Exception as e:
         await send_fail_message(message.channel, e)
@@ -147,21 +156,18 @@ async def on_message(message):
 @client.event
 async def on_message_edit(before, after):
     try:
-        # we do not want the bot to reply to itself
-        if after.author == client.user:
+        if not should_answer_message(after):
             return
 
-    old_answer = corresponding_answer(after)
-
-    if not old_answer:
+        if not before.id in history:
             print("Message has been edited, but it is not in cache - ignored.")
-        return
+            return
 
-    edits = history[old_answer.id]
+        (edits, old_answer) = history[before.id]
 
-    # This usually happens when the answer was an error
-    if not edits:
-        edits = {"type": "no-type"}
+        # This usually happens when the answer was an error
+        if not edits:
+            edits = {"type": "no-type"}
 
         args, extras, edit_info = await answer_query(after, edits)
 
@@ -176,7 +182,7 @@ async def on_message_edit(before, after):
         extras["embed"] = extras.get("embed", None)
 
         await old_answer.edit(**extras)
-        history[old_answer.id] = edit_info
+        history[after.id] = (edit_info, old_answer)
 
     except Exception as e:
         await send_fail_message(old_answer.channel, e)

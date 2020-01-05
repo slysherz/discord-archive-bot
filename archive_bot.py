@@ -1,6 +1,6 @@
 import grammar
 
-
+# Flattens a list by one level
 def flatten(lst):
     flat_list = []
     for sublist in lst:
@@ -13,14 +13,7 @@ def flatten(lst):
     return flat_list
 
 
-def group_opts(args):
-    return dict(e for e in args if isinstance(e, tuple))
-
-
-def free_opts(args):
-    return [e for e in args if not isinstance(e, tuple)]
-
-
+# Separates Add from Sub values
 def group_args(args):
     # items to add
     add = []
@@ -59,6 +52,7 @@ def group_args(args):
     return {"add": add, "sub": sub}
 
 
+# Separates 'normal' tags from key:value tags
 def extract_named_tags(tags):
     named_tags = {}
     clear_tags = []
@@ -78,6 +72,7 @@ def extract_named_tags(tags):
     return clear_tags, named_tags
 
 
+# Extracts key:value tags into their own column
 def unpack_tags_column(keys, values, new_columns=None):
     if not "tags" in keys:
         return keys, values
@@ -214,6 +209,9 @@ class ArchiveBot:
                 assert len(value) == 1
                 arc_opts[key] = value[0]
 
+            elif key == "notes":
+                arc_opts[key] = flatten(value)
+
             elif key == "author":
                 # Added as a tag, skip
                 pass
@@ -248,7 +246,7 @@ class ArchiveBot:
         if not args:
             return {"error": "ID field is missing.", "usage": self.usage("get")}
 
-        keys = ["id", "name", "tags", "link", "file"]
+        keys = ["id", "name", "tags", "link", "file", "notes"]
         values = self.arc.get(args[0], keys)
 
         if not values:
@@ -319,8 +317,11 @@ class ArchiveBot:
 
     def handle_command(self, name, args, extra):
         edits = extra.pop("edits", None)
-        free = free_opts(args)
-        opts = {**group_opts(args), **extra}
+
+        # Split free command arguments from the ones bound to a property (eg tags: somearg)
+        free = [e for e in args if not isinstance(e, tuple)]
+        other = dict(e for e in args if isinstance(e, tuple))
+        opts = {**other, **extra}
 
         try:
             commands = {
@@ -353,5 +354,9 @@ class ArchiveBot:
 
         except grammar.exceptions.LarkError as error:
             print(error)
-            return None
+            return {
+                "error": "```%s```" % error.args[0],
+                "usage": self.usage("general"),
+                "edits": extra.get("edits", None)
+            }
 

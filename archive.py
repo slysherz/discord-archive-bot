@@ -177,6 +177,59 @@ class Link:
         return value and pattern in value
 
 
+class Notes:
+    def __init__(self, connection):
+        self.con = connection
+
+        self.con.execute(
+            """
+            CREATE TABLE IF NOT EXISTS notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,   -- unique id for each tag
+                block_id INTEGER,                       -- id for the tag block
+                note TEXT                               -- 
+            )
+            """
+        )
+
+    def next_block_id(self):
+        (id,) = self.con.execute("SELECT MAX(block_id) FROM notes").fetchone()
+
+        if not id:
+            return 1
+
+        return id + 1
+
+    def pack(self, value):
+        if not value:
+            return None
+
+        id = self.next_block_id()
+
+        for note in value:
+            assert isinstance(note, str)
+            self.con.execute(
+                """
+                INSERT INTO notes(block_id, note) VALUES(?, ?)
+                """, [id, note]
+            )
+
+        return id
+
+    def unpack(self, value):
+        return self.con.execute(
+            """
+            SELECT id, note FROM notes WHERE block_id = ?
+            """, [value]
+        ).fetchall()
+
+    # TODO add support for editing notes
+    def update(self, _old, dif):
+        return self.pack(dif)
+
+    def match(self, value, pattern):
+        return value and pattern in value
+
+
 def scrub(table_name):
     return "".join(chr for chr in table_name if chr.isalnum() or chr in ["_"])
 
@@ -201,7 +254,9 @@ class Archive:
                 tags TEXT,                              -- 
                 link TEXT,                              -- 
                 file INTEGER,                           -- 
+                notes INTEGER,                          -- 
                 FOREIGN KEY(file) REFERENCES files(id)
+                FOREIGN KEY(notes) REFERENCES notes(block_id)
             )
             """
         )
@@ -211,6 +266,7 @@ class Archive:
         self.files = Files(self.db.cursor())
         self.tags = Tags()
         self.link = Link()
+        self.notes = Notes(self.db.cursor())
         self.unpackf = {
             "id": identity,
             "name": identity,
@@ -220,6 +276,7 @@ class Archive:
             "tags": self.tags.unpack,
             "link": self.link.unpack,
             "file": self.files.unpack,
+            "notes": self.notes.unpack
         }
 
     def unpack(self, keys, values):
@@ -235,12 +292,13 @@ class Archive:
         return keys
 
     # Adds a brand new item to the archive
-    def add(self, name=None, link=None, file=None, tags=None):
+    def add(self, name=None, link=None, file=None, tags=None, notes=None):
         # print("add", fields)
 
         tags = self.tags.pack(tags)
         link = self.link.pack(link)
         file_id = self.files.pack(file)
+        notes_id = self.notes.pack(notes)
         ctime = time.time()
 
         if not name and file_id:
@@ -248,14 +306,15 @@ class Archive:
 
         self.con.execute(
             """
-            INSERT INTO entries(name, ctime, tags, link, file) VALUES(?, ?, ?, ?, ?)
+            INSERT INTO entries(name, ctime, tags, link, file, notes) VALUES(?, ?, ?, ?, ?, ?)
             """,
-            [name, ctime, tags, link, file_id],
+            [name, ctime, tags, link, file_id, notes_id],
         )
 
         self.db.commit()
         return self.con.lastrowid
 
+    # Deletes an item from the archive. The item is still kept, but it won't be visible
     def delete(self, id, dont_commit=False):
         print("delete", id)
 
@@ -276,7 +335,7 @@ class Archive:
     def update(self, id, changed):
         print("update", changed)
 
-        updateable = ["name", "tags", "link"]
+        updateable = ["name", "tags", "link", "notes"]
         old_values = self.con.execute(
             """
             SELECT %s FROM entries WHERE id = ?
@@ -290,7 +349,7 @@ class Archive:
 
         old = dict(zip(updateable, old_values))
 
-        fields = ["id", "name", "tags", "link"]
+        fields = ["id", "name", "tags", "link", "notes"]
         parameters = []
 
         if "name" in changed:
@@ -305,12 +364,16 @@ class Archive:
             fields[3] = "?"
             parameters.append(self.link.pack(changed["link"][0]))
 
+        if "notes" in changed:
+            fields[4] = "?"
+            parameters.append(self.notes.update(old["notes"], changed["notes"]))
+
         # Used at the end by the WHERE clause
         parameters.append(id)
 
         self.con.execute(
             """
-            INSERT INTO entries(updates, name, tags, link) 
+            INSERT INTO entries(updates, name, tags, link, notes) 
             SELECT %s
                 FROM entries 
                 WHERE id = ?
@@ -330,7 +393,7 @@ class Archive:
     def get(self, id, opts=None):
         print("get", id, opts)
 
-        opts = self.prepare_get(opts, ["id", "name", "tags", "link", "file"])
+        opts = self.prepare_get(opts, ["id", "name", "tags", "link", "file", "notes"])
 
         query = self.con.execute(
             """
@@ -345,6 +408,7 @@ class Archive:
 
         return self.unpack(opts, query)
 
+    # Checks if all entry's properties match their respective search options
     def __match(self, entry, search_opts):
         for opt in search_opts:
             assert opt in ["tags", "link", "keyword", "name", "page"], "Cannot search for %s" % opt
@@ -364,6 +428,7 @@ class Archive:
 
         return True
 
+    # Checks if any entry's property matches the given pattern
     def __match_any(self, entry, pattern):
         # if self.tags.match(entry["tags"], [pattern]):
         #     return True
@@ -375,6 +440,9 @@ class Archive:
             return True
 
         if self.files.match(entry["file"], pattern):
+            return True
+
+        if self.notes.match(entry["notes"], pattern):
             return True
 
         return False
@@ -390,8 +458,8 @@ class Archive:
 
         result = []
 
-        for (id, name, tags, link, file) in self.con.execute(
-            "SELECT id, name, tags, link, file FROM entries WHERE hidden = 0"
+        for (id, name, tags, link, file, notes) in self.con.execute(
+            "SELECT id, name, tags, link, file, notes FROM entries WHERE hidden = 0"
         ):
             entry = {
                 "id": id,
@@ -399,6 +467,7 @@ class Archive:
                 "tags": self.tags.unpack(tags),
                 "link": self.link.unpack(link),
                 "file": file,
+                "notes": notes
             }
 
             if not self.__match(entry, search_opts):
