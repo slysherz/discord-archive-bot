@@ -36,7 +36,7 @@ experiments
 - https://github.com/django-haystack/pysolr
 
 ## Core table
-`| id | name | updates | hidden | tags | link | file |`
+`| id | name | updates | hidden | tags | link | file | notes |`
 
 ## Pieces
 - Discord bot frontend
@@ -71,11 +71,9 @@ Install required python modules:
 
 
 ## Todo
-- Improve documentation
-- Notes
 
-## Bugs
-- Editing update message to change the id doesn't restore deleted message
+## Known bugs
+- Editing an update message to change the id doesn't restore deleted message
 
 ### Ideas
 A bunch of ideas that are worth exploring
@@ -95,30 +93,29 @@ A bunch of ideas that are worth exploring
     - author:? (query who the autor is)
     - special tag restrictitions: score:value with value in 0-5
 - Improve big archive scalling
-- Which messages to answer to, which to ignore?
 - User permissions
 - Check if link works, save article
 - Plugins
 - Playlist
 - Show entry's history
 - Improve discord integration
-- Consider keeping updated entry on the same id
-    - Message edits already improve this use case
 - Search inside vs outside database
 - Load from history
     - Needs strong backward compatibility
-- Type check commands
-    - Improve error messages
-    - Usage command
 - Improve get/add/update messages
     - File / link preview
 - Configuration
     - Load settings from a file which can be reloaded
 - Knowledge graphs
     - How to tell: you should read this before you read that
-- Rethink how to select which fields are shown
+- How to select which fields are shown
 - Consider merging get and find
 - Consider having multiple files per entry
+
+### To reconsider
+- Which messages to answer to, which to ignore?
+- Consider keeping updated entry on the same id
+    - Message edits already improve this use case
 - What to do when getting an hidden item
     - Show an error?
     - Get the newest version?
