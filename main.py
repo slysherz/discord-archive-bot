@@ -27,7 +27,7 @@ def should_answer_message(message):
     if message.author == client.user:
         return
 
-    if not message.content.trim().startswith("!"):
+    if not message.content.strip().startswith("!"):
         return False
 
     return True
@@ -110,7 +110,7 @@ async def answer_query(message, edits=None):
         value = table.prepare_value(answer[key]) or "Empty"
         embed.add_field(name=key, value=value, inline=True)
 
-    if "notes" in answer:
+    if answer.get("notes", None):
         value = "\n".join(note for id, note in answer["notes"])
 
         embed.add_field(
