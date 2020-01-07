@@ -1,10 +1,13 @@
 from lark import Lark
 from lark import exceptions
 from lark import Transformer
+import os
 
 
 def build_grammar():
-    with open("command_grammar.lark", "r") as file:
+    grammar_file = os.path.join(os.path.dirname(__file__), "command_grammar.lark")
+
+    with open(grammar_file, "r") as file:
         return Lark(file.read(), start="command")
 
 
